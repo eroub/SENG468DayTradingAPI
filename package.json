@@ -1,0 +1,19 @@
+{
+  "name": "seng468daytradingapi",
+  "version": "1.0.0",
+  "description": "This is our day trading systems api for the university of victoria class seng 468",
+  "main": "server.js",
+  "scripts": {
+    "test": "npm run test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eroub/SENG468DayTradingAPI.git"
+  },
+  "author": "Evan Roubekas",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/eroub/SENG468DayTradingAPI/issues"
+  },
+  "homepage": "https://github.com/eroub/SENG468DayTradingAPI#readme"
+}
