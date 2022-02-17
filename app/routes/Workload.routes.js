@@ -4,14 +4,20 @@ const router = require("express").Router();
 module.exports = app => {
     const workload = require("../controllers/Workload.controller");
 
-    // Execute uploaded workload and retrieve dumpfile
-    router.get("/execute", workload.executeWorkload)
+    // Execute uploaded workload (this route returns the logfile)
+    router.get("/execute", workload.executeWorkload);
 
-    // Upload destination for workload file
-    const uploadDest = multer({ dest: './app/WorkloadFile'});
+    // Download the dumpfile
+    router.get("/download", workload.downloadDumpfile);
+
+    // Middleware upload destination for workload file
+    const storage = multer.diskStorage({
+        destination: "./InputOutput",
+        filename: (req,file,cb) => cb(null, "workloadfile.txt")
+    });
+    const uploadDest = multer({ storage: storage});
     // Upload workload
     router.post("/", uploadDest.single('workload'), workload.readWorkload);
-    // ----------------------------------------------
 
     app.use('/api/workload', router);
 }; 
