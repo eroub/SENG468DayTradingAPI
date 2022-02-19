@@ -20,7 +20,7 @@ exports.set_sell_amount = (user, stock, amount) => {
     // Condition: The user must have the specified amount of stock in their account for that stock.
 }
 
-exports.set_sell_trigger = (user, stokc, amount) => {
+exports.set_sell_trigger = (user, stock, amount) => {
     // Purpose: Sets the stock price trigger point for executing any SET_SELL triggers associated with the given stock and user
     // Condition: The user must have specified a SET_SELL_AMOUNT prior to setting a SET_SELL_TRIGGER
 }

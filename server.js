@@ -9,8 +9,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Connect and Sync to DB
-// const db = require("./app/models");
-// db.sequelize.sync();
+const db = require("./app/models");
+db.sequelize.sync();
 
 // ROUTES
 require("./app/routes/Workload.routes")(app);
