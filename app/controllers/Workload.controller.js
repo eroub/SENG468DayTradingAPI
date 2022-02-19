@@ -49,7 +49,7 @@ const readWrite = async () => {
                 // Initial commandBlock
                 var commandBlock = "<userCommand>\n" + 
                 `<timestamp>${new Date().valueOf()}</timestamp>\n` +
-                `<transactionNum>${index}</transactionNum>\n` +
+                `<transactionNum>${index+1}</transactionNum>\n` +
                 `<command>${argument[0]}</command>\n` +
                 `<username>${argument[1]}</username>\n`
 
