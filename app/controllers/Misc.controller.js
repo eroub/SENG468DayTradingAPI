@@ -38,9 +38,17 @@ exports.getAllTransactions = (req, res) => {
     );
 };
 
+exports.testQuote = (req, res) => {
+  const stockPrice = this.quote(null, req.params.stockSymbol);
+  console.log(stockPrice);
+  //res.send(stockPrice);
+  res.status(200).send();
+}
+
 exports.quote = (userid, stock) => {
   // Purpose: Get the current quote for the stock for the specified user
-  const stockSymbol = stock.split(0, 3);
+  const stockArray = Array.from(stock);
+  const stockSymbol = stockArray.slice(0, 3);
   let stockNumber = 0;
   stockSymbol.forEach((letter) => {
     const ascii = letter.charCodeAt(0);
@@ -48,8 +56,8 @@ exports.quote = (userid, stock) => {
   });
 
   //a stock symbols base price is the sum of its ascii values
-  //add ten to get more interesting numbers at the lower range
-  const basePrice = stockNumber + 10;
+  //the lowest base (AAA) is 195, the highest base (ZZZ) is (270). Scale it to make it more appropriate.
+  const basePrice = stockNumber/3;
 
   const date = new Date();
   const time = date.getTime();
