@@ -82,7 +82,7 @@ const readWrite = async () => {
                     misc.quote(argument[1], argument[2]);
                     break;
                 case "BUY":
-                    buy.buy(argument[1], argument[2], argument[3]);
+                    await buy.buy(argument[1], argument[2], argument[3]);
                     break;
                 case "COMMIT_BUY":
                     buy.commit_buy(argument[1]);

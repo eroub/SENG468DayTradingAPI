@@ -1,10 +1,6 @@
 // Owned Stocks model that maps to the columns in the database
 module.exports = (sequelize, Sequelize) => {
     const OwnedStocks = sequelize.define("OwnedStocks", {
-        TransactionID: {
-            primaryKey: true,
-            type: Sequelize.STRING,
-        },
         UserID: {
             type: Sequelize.STRING,
             allowNull: false,
