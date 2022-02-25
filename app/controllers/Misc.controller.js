@@ -13,7 +13,6 @@ exports.add = async (userid, amount) => {
 
   // Check if user exists
   await User.findAll({ where: { UserName: userObj.UserName }}).then(async (data) => {
-    console.log(data);
     if (data.length == 0) {
       // User does not exist yet create user
       User.create(userObj)
