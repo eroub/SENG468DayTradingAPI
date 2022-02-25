@@ -41,7 +41,8 @@ const readWrite = async () => {
         const lines = data.split(/\r?\n/);
 
         // Read line by line
-        lines.forEach((line, index) => {
+        let index = 0;
+        for(const line of lines){
             const argument = line.split(" ")[1].split(",").filter(val=>val);
             // First write to dumpfile what the userCommand is
             // Do not write if argument is DUMPLOG
@@ -75,7 +76,7 @@ const readWrite = async () => {
             // SWITCH operator for deciding which function to call based on command
             switch (argument[0]) {
                 case "ADD":
-                    misc.add(argument[1], argument[2]);
+                    await misc.add(argument[1], argument[2]);
                     break;
                 case "QUOTE":
                     misc.quote(argument[1], argument[2]);
@@ -129,7 +130,8 @@ const readWrite = async () => {
                 default:
                     console.log("AN ERROR OCCURRED READING: " + argument);
             };
-        });
+            index++;
+        }
 
         // Write </log>
         // Always happens after execution of commands
@@ -144,7 +146,9 @@ const readWrite = async () => {
     }
 
     // Close file
-    fs.close(fd);
+    fs.close(fd, (err) => {
+        if(err) console.log("File close errored", err);
+    });
 }
 
 exports.executeWorkload = async (req,res) => {

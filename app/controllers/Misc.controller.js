@@ -1,41 +1,52 @@
 // This file contains the methods for the commands that are neither buys or sells
+const { sequelize } = require("../models/index");
 const db = require("../models/index");
 const User = db.User;
 const OwnedStocks = db.OwnedStocks;
 
-exports.add = (userid, amount) => {
+exports.add = async (userid, amount) => {
   // Purpose: Add the given amount of money to the users' account
   const userObj = {
     UserName: userid,
     Funds: amount,
   };
 
+  let transaction = await sequelize.transaction();
   // Check if user exists
-  // User.findAll({ where: { UserName: userObj.UserName } }).then((data) => {
-  //     if(data = []) {
-  //         // User does not exist yet create user
-  //         User.create(userObj).then((status) => {
-  //             if(status) {
-  //                 return true;
-  //             }
-  //             return false;
-  //         }).catch((err) => {
-  //             console.log(err);
-  //             return false;
-  //         });
-  //     } else {
-  //         User.update({ funds: userObj.amount + data[0].dataValues.Funds}, {where: {UserName: userObj.UserName }})
-  //     }
-  // })
+  await User.findAll({ where: { UserName: userObj.UserName }, transaction}).then(async (data) => {
+    console.log(data);
+    if (data.length == 0) {
+      // User does not exist yet create user
+      User.create(userObj)
+        .then((status) => {
+          if (status) {
+            return true;
+          }
+          return false;
+        })
+        .catch((err) => {
+          console.log(err);
+          return false;
+        });
+    } else {
+      const newFunds =
+        parseInt(userObj.Funds) + parseInt(data[0].dataValues.Funds);
+      await User.update(
+        { Funds: newFunds },
+        { where: { UserName: userObj.UserName }, transaction}
+      );
+    }
+  });
+  await transaction.commit();
 };
 
 exports.getAllTransactions = (req, res) => {
-    const userID = req.params.user;
-    User.findAll({ where: { UserName: userID }, include: [OwnedStocks] }).then(
-        (data) => {
-        return res.send(data);
-        }
-    );
+  const userID = req.params.user;
+  User.findAll({ where: { UserName: userID }, include: [OwnedStocks] }).then(
+    (data) => {
+      return res.send(data);
+    }
+  );
 };
 
 exports.testQuote = (req, res) => {
@@ -43,7 +54,7 @@ exports.testQuote = (req, res) => {
   console.log(stockPrice);
   //res.send(stockPrice);
   res.status(200).send();
-}
+};
 
 exports.quote = (userid, stock) => {
   // Purpose: Get the current quote for the stock for the specified user
@@ -57,7 +68,7 @@ exports.quote = (userid, stock) => {
 
   //a stock symbols base price is the sum of its ascii values
   //the lowest base (AAA) is 195, the highest base (ZZZ) is (270). Scale it to make it more appropriate.
-  const basePrice = stockNumber/3;
+  const basePrice = stockNumber / 3;
 
   const date = new Date();
   const time = date.getTime();
