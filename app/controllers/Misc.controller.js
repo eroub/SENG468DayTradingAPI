@@ -11,9 +11,8 @@ exports.add = async (userid, amount) => {
     Funds: amount,
   };
 
-  let transaction = await sequelize.transaction();
   // Check if user exists
-  await User.findAll({ where: { UserName: userObj.UserName }, transaction}).then(async (data) => {
+  await User.findAll({ where: { UserName: userObj.UserName }}).then(async (data) => {
     console.log(data);
     if (data.length == 0) {
       // User does not exist yet create user
@@ -33,11 +32,10 @@ exports.add = async (userid, amount) => {
         parseInt(userObj.Funds) + parseInt(data[0].dataValues.Funds);
       await User.update(
         { Funds: newFunds },
-        { where: { UserName: userObj.UserName }, transaction}
+        { where: { UserName: userObj.UserName }}
       );
     }
   });
-  await transaction.commit();
 };
 
 exports.getAllTransactions = (req, res) => {
