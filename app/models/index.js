@@ -27,5 +27,23 @@ db.sequelize = sequelize;
 
 // Models
 db.User = require("./User.model.js")(sequelize, Sequelize);
+db.Transaction = require("./Transaction.model.js")(sequelize, Sequelize);
+db.OwnedStocks = require("./OwnedStocks.model.js")(sequelize, Sequelize);
+
+//Users and Transactions is a one to many relationship
+db.User.hasMany(db.Transaction, {
+    foreignKey: "UserID",
+    type: Sequelize.STRING,
+    allowNull: false,
+});
+db.Transaction.belongsTo(db.User);
+
+//Users and OwnedStocks is a one to many relationship
+db.User.hasMany(db.OwnedStocks, {
+    foreignKey: "UserID",
+    type: Sequelize.STRING,
+    allowNull: false,
+});
+db.OwnedStocks.belongsTo(db.User);
 
 module.exports = db;

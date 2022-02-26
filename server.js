@@ -14,6 +14,7 @@ db.sequelize.sync();
 
 // ROUTES
 require("./app/routes/Workload.routes")(app);
+require("./app/routes/Misc.routes")(app);
 
 // Set port, listen for requests
 const PORT = process.env.APIPORT || 8080;
