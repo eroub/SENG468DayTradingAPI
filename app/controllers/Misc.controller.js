@@ -3,6 +3,7 @@ const { sequelize } = require("../models/index");
 const db = require("../models/index");
 const User = db.User;
 const Transaction = db.Transaction;
+const OwnedStocks = db.OwnedStocks;
 
 exports.add = async (userid, amount) => {
   // Purpose: Add the given amount of money to the users' account

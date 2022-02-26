@@ -2,6 +2,7 @@
 const db = require("../models/index");
 const User = db.User;
 const Transaction = db.Transaction;
+const OwnedStocks = db.OwnedStocks;
 
 const misc = require("./Misc.controller");
 
@@ -48,16 +49,24 @@ exports.commit_buy = async (user, buyObject) => {
   }
 
   const { stock, buyAmount, stockQuote, newFunds } = buyObject;
-  const StockObject = {
+  const TransactionObject = {
     UserID: user,
     StockSymbol: stock,
     StockAmount: buyAmount,
     StockBuyPrice: stockQuote,
   };
+  const StockObject = {
+    UserID: user,
+    StockSymbol: stock,
+    StockAmount: buyAmount,
+    StockAveragePrice: stockQuote,
+  }
 
+  //subtract funds from the user
   await User.update({ Funds: newFunds }, { where: { UserName: user } });
 
-  await Transaction.create(StockObject)
+  //create the transaction history
+  await Transaction.create(TransactionObject)
     .then((status) => {
       if (status) {
         return true;
@@ -69,19 +78,35 @@ exports.commit_buy = async (user, buyObject) => {
       return false;
     });
 
-  // LEAVE THIS:
-  // code for calculating price average for a users stock
-  // need this for portfolio stuff eventually
-  //
-  // const oldAmount = parseInt(data[0].dataValues.StockAmount);
-  // const oldBuyPrice = parseInt(data[0].dataValues.StockBuyPrice);
-  // const newAmount = oldAmount + buyAmount;
-  // const totalSpent = oldAmount * oldBuyPrice + buyAmount * stockQuote;
-  // const newPriceAverage = totalSpent / newAmount;
-  // await Transaction.update(
-  //   { StockAmount: newAmount, StockBuyPrice: newPriceAverage },
-  //   { where: { UserID: user, StockSymbol: stock } }
-  // );
+  //update users portfolio
+  await OwnedStocks.findAll({
+    where: { UserID: user, StockSymbol: stock },
+  }).then(async (data) => {
+    if (data.length == 0) {
+      //User has none of this stock, so add it
+      await OwnedStocks.create(StockObject)
+        .then((status) => {
+          if (status) {
+            return true;
+          }
+          return false;
+        })
+        .catch((err) => {
+          console.log(err);
+          return false;
+        });
+    } else {
+      const oldAmount = parseInt(data[0].dataValues.StockAmount);
+      const oldBuyPrice = parseInt(data[0].dataValues.StockAveragePrice);
+      const newAmount = oldAmount + buyAmount;
+      const totalSpent = oldAmount * oldBuyPrice + buyAmount * stockQuote;
+      const newPriceAverage = totalSpent / newAmount;
+      await OwnedStocks.update(
+        { StockAmount: newAmount, StockAveragePrice: newPriceAverage },
+        { where: { UserID: user, StockSymbol: stock } }
+      );
+    }
+  });
 };
 
 exports.cancel_buy = (user) => {
