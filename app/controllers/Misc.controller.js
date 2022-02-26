@@ -5,7 +5,7 @@ const User = db.User;
 const Transaction = db.Transaction;
 const OwnedStocks = db.OwnedStocks;
 
-exports.add = async (userid, amount) => {
+exports.add = async (userid, amount, dumpFile) => {
   // Purpose: Add the given amount of money to the users' account
   const userObj = {
     UserName: userid,
@@ -54,7 +54,7 @@ exports.testQuote = (req, res) => {
   res.status(200).send();
 };
 
-exports.quote = (userid, stock) => {
+exports.quote = (userid, stock, dumpFile) => {
   // Purpose: Get the current quote for the stock for the specified user
   const stockArray = Array.from(stock);
   const stockSymbol = stockArray.slice(0, 3);
@@ -96,12 +96,12 @@ exports.dumplog = (filename) => {
   // Purpose: Print out to the specified file the complete set of transactions that have occurred in the system.
 };
 
-exports.displaySummary = (userid) => {
+exports.displaySummary = (userid, dumpFile) => {
   // Purpose: Provides a summary to the client of the given user's transaction history and the current status of their accounts as well as any set buy or sell triggers and their parameters
 };
 
 // NOT NEEDED FOR FIRST DELIVERABLE
-exports.dumplogUserSpecific = (userid, filename) => {
+exports.dumplogUserSpecific = (userid, filename, dumpFile) => {
   // Purpose: Print out the history of the users transactions to the user specified file
 };
 

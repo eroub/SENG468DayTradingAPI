@@ -80,59 +80,57 @@ const readWrite = async () => {
             // SWITCH operator for deciding which function to call based on command
             switch (argument[0]) {
                 case "ADD":
-                    await misc.add(argument[1], argument[2]);
+                    await misc.add(argument[1], argument[2], dumpFile);
                     break;
                 case "QUOTE":
-                    misc.quote(argument[1], argument[2]);
+                    misc.quote(argument[1], argument[2], dumpFile);
                     break;
                 case "BUY":
-                    buyObject = await buy.buy(argument[1], argument[2], argument[3]);
+                    buyObject = await buy.buy(argument[1], argument[2], argument[3], dumpFile);
                     break;
                 case "COMMIT_BUY":
-                    await buy.commit_buy(argument[1], buyObject);
+                    await buy.commit_buy(argument[1], buyObject, dumpFile);
                     buyObject = {};
                     break;
                 case "CANCEL_BUY":
-                    //do we need this?
                     //buy.cancel_buy(argument[1]);
                     buyObject = {};
                     break;
                 case "SELL":
-                    sellObject = await sell.sell(argument[1], argument[2], argument[3]);
+                    sellObject = await sell.sell(argument[1], argument[2], argument[3], dumpFile);
                     break;
                 case "COMMIT_SELL":
-                    await sell.commit_sell(argument[1], sellObject);
+                    await sell.commit_sell(argument[1], sellObject, dumpFile);
                     sellObject = {};
                     break;
                 case "CANCEL_SELL":
-                    //do we need this?
                     //sell.cancel_sell(argument[1]);
                     sellObject = {};
                     break;
                 case "SET_BUY_AMOUNT":
-                    buy.set_buy_amount(argument[1], argument[2], argument[3]);
+                    buy.set_buy_amount(argument[1], argument[2], argument[3], dumpFile);
                     break;
                 case "CANCEL_SET_BUY":
-                    buy.cancel_set_buy(argument[1], argument[2]);
+                    buy.cancel_set_buy(argument[1], argument[2], dumpFile);
                     break;
                 case "SET_BUY_TRIGGER":
-                    buy.set_buy_trigger(argument[1], argument[2], argument[3]);
+                    buy.set_buy_trigger(argument[1], argument[2], argument[3], dumpFile);
                     break;
                 case "SET_SELL_AMOUNT":
-                    sell.set_sell_amount(argument[1], argument[2], argument[3]);
+                    sell.set_sell_amount(argument[1], argument[2], argument[3], dumpFile);
                     break;
                 case "SET_SELL_TRIGGER":
-                    sell.set_sell_trigger(argument[1], argument[2], argument[3]);
+                    sell.set_sell_trigger(argument[1], argument[2], argument[3], dumpFile);
                     break;
                 case "CANCEL_SET_SELL":
-                    sell.cancel_set_sell(argument[1], argument[2]);
+                    sell.cancel_set_sell(argument[1], argument[2], dumpFile);
                     break;
                 case "DISPLAY_SUMMARY":
-                    misc.displaySummary(argument[1]);
+                    misc.displaySummary(argument[1], dumpFile);
                     break;
                 case "DUMPLOG":
                     if(argument.length = 3) {
-                        misc.dumplogUserSpecific(argument[1], argument[2]);
+                        misc.dumplogUserSpecific(argument[1], argument[2], dumpFile);
                     } else {
                         misc.dumplog(argument[1]);
                     }
