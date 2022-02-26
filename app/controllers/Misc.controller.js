@@ -2,7 +2,7 @@
 const { sequelize } = require("../models/index");
 const db = require("../models/index");
 const User = db.User;
-const OwnedStocks = db.OwnedStocks;
+const Transaction = db.Transaction;
 
 exports.add = async (userid, amount) => {
   // Purpose: Add the given amount of money to the users' account
@@ -39,7 +39,7 @@ exports.add = async (userid, amount) => {
 
 exports.getAllTransactions = (req, res) => {
   const userID = req.params.user;
-  User.findAll({ where: { UserName: userID }, include: [OwnedStocks] }).then(
+  User.findAll({ where: { UserName: userID }, include: [Transaction] }).then(
     (data) => {
       return res.send(data);
     }

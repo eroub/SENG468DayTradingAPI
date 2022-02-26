@@ -1,6 +1,6 @@
 // Owned Stocks model that maps to the columns in the database
 module.exports = (sequelize, Sequelize) => {
-    const OwnedStocks = sequelize.define("OwnedStocks", {
+    const Transaction = sequelize.define("Transaction", {
         UserID: {
             type: Sequelize.STRING,
             allowNull: false,
@@ -20,7 +20,6 @@ module.exports = (sequelize, Sequelize) => {
         },
     }, {
         freezeTableName: true,
-        timestamps: false,
     });
-    return OwnedStocks;
+    return Transaction;
 };

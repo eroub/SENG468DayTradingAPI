@@ -1,7 +1,7 @@
 // This controller contains all the methods that have to do with "buying" a stock
 const db = require("../models/index");
 const User = db.User;
-const OwnedStocks = db.OwnedStocks;
+const Transaction = db.Transaction;
 
 const misc = require("./Misc.controller");
 
@@ -11,6 +11,7 @@ exports.buy = async (user, stock, amount) => {
 
   const stockQuote = misc.quote(user, stock);
   const buyAmount = Math.floor(amount / stockQuote);
+  let newFunds;
   await User.findAll({ where: { UserName: user } }).then(async (data) => {
     if (data.length == 0) {
       console.log("error: user does not exist");
@@ -18,15 +19,35 @@ exports.buy = async (user, stock, amount) => {
     } else {
       const spendAmount = buyAmount * stockQuote;
       const currentFunds = parseInt(data[0].dataValues.Funds);
-      const newFunds = currentFunds - spendAmount;
+      newFunds = currentFunds - spendAmount;
       if (newFunds < 0) {
         console.log("error: insufficient funds");
         return;
       }
-      await User.update({ Funds: newFunds }, { where: { UserName: user } });
     }
   });
 
+  const BuyObject = {
+    user: user,
+    stock: stock,
+    buyAmount: buyAmount,
+    stockQuote: stockQuote,
+    newFunds: newFunds,
+  };
+
+  return BuyObject;
+};
+
+exports.commit_buy = async (user, buyObject) => {
+  // Purpose: Commits the most recently executed BUY command
+  // Conditions: The user must have executed a BUY command within the previous 60 seconds
+
+  if (!buyObject?.stock || user !== buyObject.user) {
+    console.log("error: no buy ready to be committed");
+    return;
+  }
+
+  const { stock, buyAmount, stockQuote, newFunds } = buyObject;
   const StockObject = {
     UserID: user,
     StockSymbol: stock,
@@ -34,39 +55,33 @@ exports.buy = async (user, stock, amount) => {
     StockBuyPrice: stockQuote,
   };
 
-  await OwnedStocks.findAll({
-    where: { UserID: user, StockSymbol: stock },
-  }).then(async (data) => {
-    if (data.length == 0) {
-      //User has none of this stock, so add it
-      await OwnedStocks.create(StockObject)
-        .then((status) => {
-          if (status) {
-            return true;
-          }
-          return false;
-        })
-        .catch((err) => {
-          console.log(err);
-          return false;
-        });
-    } else {
-      const oldAmount = parseInt(data[0].dataValues.StockAmount);
-      const oldBuyPrice = parseInt(data[0].dataValues.StockBuyPrice);
-      const newAmount = oldAmount + buyAmount;
-      const totalSpent = oldAmount * oldBuyPrice + buyAmount * stockQuote;
-      const newPriceAverage = totalSpent / newAmount;
-      await OwnedStocks.update(
-        { StockAmount: newAmount, StockBuyPrice: newPriceAverage },
-        { where: { UserID: user, StockSymbol: stock } }
-      );
-    }
-  });
-};
+  await User.update({ Funds: newFunds }, { where: { UserName: user } });
 
-exports.commit_buy = (user) => {
-  // Purpose: Commits the most recently executed BUY command
-  // Conditions: The user must have executed a BUY command within the previous 60 seconds
+  await Transaction.create(StockObject)
+    .then((status) => {
+      if (status) {
+        return true;
+      }
+      return false;
+    })
+    .catch((err) => {
+      console.log(err);
+      return false;
+    });
+
+  // LEAVE THIS:
+  // code for calculating price average for a users stock
+  // need this for portfolio stuff eventually
+  //
+  // const oldAmount = parseInt(data[0].dataValues.StockAmount);
+  // const oldBuyPrice = parseInt(data[0].dataValues.StockBuyPrice);
+  // const newAmount = oldAmount + buyAmount;
+  // const totalSpent = oldAmount * oldBuyPrice + buyAmount * stockQuote;
+  // const newPriceAverage = totalSpent / newAmount;
+  // await Transaction.update(
+  //   { StockAmount: newAmount, StockBuyPrice: newPriceAverage },
+  //   { where: { UserID: user, StockSymbol: stock } }
+  // );
 };
 
 exports.cancel_buy = (user) => {
