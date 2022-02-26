@@ -42,7 +42,7 @@ const readWrite = async () => {
 
         // Read line by line
         lines.forEach((line, index) => {
-            const argument = line.split(" ")[1].split(",").filter(val=>val);
+            const argument = line.split(" ")[1].split(",");
             // First write to dumpfile what the userCommand is
             // Do not write if argument is DUMPLOG
             if(argument[0] != "DUMPLOG") {

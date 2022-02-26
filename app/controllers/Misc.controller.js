@@ -10,22 +10,26 @@ exports.add = (userid, amount) => {
     }
 
     // Check if user exists
-    // User.findAll({ where: { UserName: userObj.UserName } }).then((data) => {
-    //     if(data = []) {
-    //         // User does not exist yet create user
-    //         User.create(userObj).then((status) => {
-    //             if(status) {
-    //                 return true;
-    //             }
-    //             return false;
-    //         }).catch((err) => {
-    //             console.log(err);
-    //             return false;
-    //         });
-    //     } else {
-    //         User.update({ funds: userObj.amount + data[0].dataValues.Funds}, {where: {UserName: userObj.UserName }})
-    //     }
-    // })
+    User.findAll({ where: { UserName: userObj.UserName } }).then((data) => {
+        console.log(data);
+        if(data.length == []) {
+            // User does not exist yet create user
+            User.create(userObj).then((status) => {
+                if(status) {
+                    return true;
+                }
+                return false;
+            }).catch((err) => {
+                console.log(err);
+                return false;
+            });
+        } else {
+            console.log("---\nUPDATE\n")
+            console.log(data);
+            console.log("---\n")
+            User.update({ funds: userObj.amount + data[0].dataValues.Funds}, {where: {UserName: userObj.UserName }})
+        }
+    });
 
 };
 

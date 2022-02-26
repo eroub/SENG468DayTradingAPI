@@ -1,4 +1,5 @@
 // This controller contains all the methods that have to do with "buying" a stock
+const misc = require("./Misc.controller");
 
 exports.buy = (user, stock, amount) => {
     // Purpose: Buy the dollar amount of the stock for the specified user at the current price.

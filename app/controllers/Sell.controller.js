@@ -1,4 +1,5 @@
 // This controller contains all the methods that have to do with "selling" a stock
+const misc = require("./Misc.controller");
 
 exports.sell = (user, stock, amount) => {
     // Purpose: Sell the specified dollar mount of the stock currently held by the specified user at the current price.
