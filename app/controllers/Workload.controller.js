@@ -40,8 +40,9 @@ const readWrite = async () => {
         // Split contents by line
         const lines = data.split(/\r?\n/);
 
-        // Create empty object for stock buys
+        // Create empty objects for stock buys and sells
         let buyObject = {};
+        let sellObject = {};
 
         // Read line by line
         let index = 0;
@@ -97,13 +98,16 @@ const readWrite = async () => {
                     buyObject = {};
                     break;
                 case "SELL":
-                    sell.sell(argument[1], argument[2], argument[3]);
+                    sellObject = await sell.sell(argument[1], argument[2], argument[3]);
                     break;
                 case "COMMIT_SELL":
-                    sell.commit_sell(argument[1]);
+                    await sell.commit_sell(argument[1], sellObject);
+                    sellObject = {};
                     break;
                 case "CANCEL_SELL":
-                    sell.cancel_sell(argument[1]);
+                    //do we need this?
+                    //sell.cancel_sell(argument[1]);
+                    sellObject = {};
                     break;
                 case "SET_BUY_AMOUNT":
                     buy.set_buy_amount(argument[1], argument[2], argument[3]);

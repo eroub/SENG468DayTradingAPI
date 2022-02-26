@@ -12,6 +12,11 @@ exports.buy = async (user, stock, amount) => {
 
   const stockQuote = misc.quote(user, stock);
   const buyAmount = Math.floor(amount / stockQuote);
+  if(amount < stockQuote){
+    console.log("error: stock quote too high for desired amount");
+    return;
+  }
+
   let newFunds;
   await User.findAll({ where: { UserName: user } }).then(async (data) => {
     if (data.length == 0) {
@@ -51,9 +56,10 @@ exports.commit_buy = async (user, buyObject) => {
   const { stock, buyAmount, stockQuote, newFunds } = buyObject;
   const TransactionObject = {
     UserID: user,
+    TransactionType: "buy",
     StockSymbol: stock,
     StockAmount: buyAmount,
-    StockBuyPrice: stockQuote,
+    StockQuote: stockQuote,
   };
   const StockObject = {
     UserID: user,

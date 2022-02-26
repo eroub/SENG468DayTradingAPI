@@ -6,6 +6,11 @@ module.exports = (sequelize, Sequelize) => {
             allowNull: false,
             foreignKey: true,
         },
+        TransactionType: {
+            type: Sequelize.ENUM,
+            values: ['buy', 'sell'],
+            allowNull: false,
+        },
         StockSymbol: {
             type: Sequelize.STRING,
             allowNull: false,
@@ -14,7 +19,7 @@ module.exports = (sequelize, Sequelize) => {
             type: Sequelize.DECIMAL(18,2),
             allowNull: false,
         },
-        StockBuyPrice: {    
+        StockQuote: {    
             type: Sequelize.DECIMAL(18,2),
             allowNull: false,
         },
