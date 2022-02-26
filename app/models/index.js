@@ -29,6 +29,7 @@ db.sequelize = sequelize;
 db.User = require("./User.model.js")(sequelize, Sequelize);
 db.Transaction = require("./Transaction.model.js")(sequelize, Sequelize);
 db.OwnedStocks = require("./OwnedStocks.model.js")(sequelize, Sequelize);
+db.Trigger = require("./Trigger.model.js")(sequelize, Sequelize);
 
 //Users and Transactions is a one to many relationship
 db.User.hasMany(db.Transaction, {
@@ -45,5 +46,12 @@ db.User.hasMany(db.OwnedStocks, {
     allowNull: false,
 });
 db.OwnedStocks.belongsTo(db.User);
+
+db.User.hasMany(db.Trigger, {
+    foreignKey: "UserID",
+    type: Sequelize.STRING,
+    allowNull: false,
+});
+db.Trigger.belongsTo(db.User);
 
 module.exports = db;
