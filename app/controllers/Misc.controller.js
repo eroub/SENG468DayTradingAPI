@@ -1,11 +1,25 @@
 // This file contains the methods for the commands that are neither buys or sells
-const { sequelize } = require("../models/index");
+const { generateKeyPair } = require('crypto');
 const db = require("../models/index");
 const User = db.User;
 const Transaction = db.Transaction;
 const OwnedStocks = db.OwnedStocks;
 
-exports.add = async (userid, amount, dumpFile) => {
+exports.writeErrorBlock = (dumpFile, transNum, user, stock, amount, msg) => {
+  var errorBlock = "<errorEvent>\n" + 
+    `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+    `<server>local</server>\n` +
+    `<transactionNum>${transNum}</transactionNum>\n` +
+    `<command>BUY</command>\n` +
+    `<username>${user}</username>\n` +
+    `<stockSymbol>${stock}</stockSymbol>\n` +
+    `<funds>${amount}</funds>\n` +
+    `<errorMessage>${errMsg}</errorMessage>\n` +
+    "</errorEvent>\n"
+    dumpFile.write(errorBlock);
+}
+
+exports.add = async (userid, amount, dumpFile, transNum) => {
   // Purpose: Add the given amount of money to the users' account
   const userObj = {
     UserName: userid,
@@ -19,6 +33,15 @@ exports.add = async (userid, amount, dumpFile) => {
       await User.create(userObj)
         .then((status) => {
           if (status) {
+            const accountTransactionBlock = "<accountTransaction>\n" +
+            `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+            `<server>local</server>\n` +
+            `<transactionNum>${transNum}</transactionNum>\n` +
+            `<action>ADD</action>\n` +
+            `<username>${userid}</username>\n` +
+            `<funds>${amount}</funds>\n` +
+            "</accountTransaction>\n";
+            dumpFile.write(accountTransactionBlock);
             return true;
           }
           return false;
@@ -33,7 +56,21 @@ exports.add = async (userid, amount, dumpFile) => {
       await User.update(
         { Funds: newFunds },
         { where: { UserName: userObj.UserName }}
-      );
+      ).then((status) => {
+        if (status) {
+          const accountTransactionBlock = "<accountTransaction>\n" +
+          `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+          `<server>local</server>\n` +
+          `<transactionNum>${transNum}</transactionNum>\n` +
+          `<action>ADD</action>\n` +
+          `<username>${userid}</username>\n` +
+          `<funds>${amount}</funds>\n` +
+          "</accountTransaction>\n";
+          dumpFile.write(accountTransactionBlock);
+          return true;
+        }
+        return false;
+      });
     }
   });
 };
@@ -47,14 +84,7 @@ exports.getAllTransactions = (req, res) => {
   );
 };
 
-exports.testQuote = (req, res) => {
-  const stockPrice = this.quote(null, req.params.stockSymbol);
-  console.log(stockPrice);
-  //res.send(stockPrice);
-  res.status(200).send();
-};
-
-exports.quote = (userid, stock, dumpFile) => {
+exports.quote = (userid, stock, dumpFile, transNum) => {
   // Purpose: Get the current quote for the stock for the specified user
   const stockArray = Array.from(stock);
   const stockSymbol = stockArray.slice(0, 3);
@@ -89,6 +119,45 @@ exports.quote = (userid, stock, dumpFile) => {
     stockPrice = basePrice * spikeMag;
   }
 
+  // Generate crypto key
+  // Function gathered from https://www.geeksforgeeks.org/node-js-crypto-generatekeypair-method/
+  var key = "";
+  generateKeyPair('rsa', {
+    modulusLength: 530, 
+    publicExponent: 0x10101,
+    publicKeyEncoding: {
+      type: 'pkcs1',
+      format: 'der'
+    },
+    privateKeyEncoding: {
+      type: 'pkcs8',
+      format: 'der',
+      cipher: 'aes-192-cbc',
+      passphrase: 'SENG468'
+    }
+  }, (err, publicKey, privateKey) => { // Callback function
+         if(!err) {
+           key = publicKey;
+         } else {
+           // Prints error
+           console.log(err);
+         }
+           
+    });
+
+  // Write to dumpfile a quoteServer block
+  var quoteBlock = "<quoteServer>\n" + 
+  `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+  `<server>local</server>\n` +
+  `<transactionNum>${transNum}</transactionNum>\n` +
+  `<quoteServerTime>${new Date().valueOf()}</quoteServerTime>\n` +
+  `<username>${userid}</username>\n` +
+  `<stockSymbol>${stock}</stockSymbol>\n` +
+  `<price>${stockPrice}</price>\n` +
+  `<cryptokey>${key}</cryptokey>\n` +
+  "</quoteServer>\n"
+  dumpFile.write(quoteBlock);
+
   return stockPrice;
 };
 
@@ -96,12 +165,12 @@ exports.dumplog = (filename) => {
   // Purpose: Print out to the specified file the complete set of transactions that have occurred in the system.
 };
 
-exports.displaySummary = (userid, dumpFile) => {
+exports.displaySummary = (userid, dumpFile, transNum) => {
   // Purpose: Provides a summary to the client of the given user's transaction history and the current status of their accounts as well as any set buy or sell triggers and their parameters
 };
 
 // NOT NEEDED FOR FIRST DELIVERABLE
-exports.dumplogUserSpecific = (userid, filename, dumpFile) => {
+exports.dumplogUserSpecific = (userid, filename, dumpFile, transNum) => {
   // Purpose: Print out the history of the users transactions to the user specified file
 };
 

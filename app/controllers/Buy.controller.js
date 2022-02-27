@@ -6,28 +6,34 @@ const OwnedStocks = db.OwnedStocks;
 
 const misc = require("./Misc.controller");
 
-exports.buy = async (user, stock, amount, dumpFile) => {
+exports.buy = async (user, stock, amount, dumpFile, transNum) => {
   // Purpose: Buy the dollar amount of the stock for the specified user at the current price.
   // Conditions: The user's account must be greater or equal to the amount of the purchase.
 
-  const stockQuote = misc.quote(user, stock, dumpFile);
+  const stockQuote = misc.quote(user, stock, dumpFile, transNum);
   const buyAmount = Math.floor(amount / stockQuote);
   if(amount < stockQuote){
-    console.log("error: stock quote too high for desired amount");
+    const errMsg = "Stock Quote too high for desired amount";
+    console.log("error: " + errMsg);
+    misc.writeErrorBlock(dumpFile, transNum, user, stock, amount, errMsg);
     return;
   }
 
   let newFunds;
   await User.findAll({ where: { UserName: user } }).then(async (data) => {
     if (data.length == 0) {
-      console.log("error: user does not exist");
+      const errMsg = "Account " + user + " does not exist";
+      console.log("error: " + errMsg);
+      misc.writeErrorBlock(dumpFile, transNum, user, stock, amount, errMsg);
       return;
     } else {
       const spendAmount = buyAmount * stockQuote;
       const currentFunds = parseInt(data[0].dataValues.Funds);
       newFunds = currentFunds - spendAmount;
       if (newFunds < 0) {
-        console.log("error: insufficient funds");
+        const errMsg = "Account " + user + " has insufficient funds";
+        console.log("error: " + errMsg);
+        misc.writeErrorBlock(dumpFile, transNum, user, stock, amount, errMsg);
         return;
       }
     }
@@ -44,12 +50,22 @@ exports.buy = async (user, stock, amount, dumpFile) => {
   return BuyObject;
 };
 
-exports.commit_buy = async (user, buyObject, dumpFile) => {
+exports.commit_buy = async (user, buyObject, dumpFile, transNum) => {
   // Purpose: Commits the most recently executed BUY command
   // Conditions: The user must have executed a BUY command within the previous 60 seconds
 
   if (!buyObject?.stock || user !== buyObject.user) {
-    console.log("error: no buy ready to be committed");
+    const errMsg = "No buy to be committed";
+    console.log("error: " + errMsg);
+    var errorBlock = "<errorEvent>\n" + 
+    `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+    `<server>local</server>\n` +
+    `<transactionNum>${transNum}</transactionNum>\n` +
+    `<command>COMMIT_BUY</command>\n` +
+    `<username>${user}</username>\n` +
+    `<errorMessage>${errMsg}</errorMessage>\n` +
+    "</errorEvent>\n"
+    dumpFile.write(errorBlock);
     return;
   }
 
@@ -69,12 +85,35 @@ exports.commit_buy = async (user, buyObject, dumpFile) => {
   }
 
   //subtract funds from the user
-  await User.update({ Funds: newFunds }, { where: { UserName: user } });
+  await User.update({ Funds: newFunds }, { where: { UserName: user } }).then((status) => {
+    if (status) {
+      const accountTransactionBlock = "<accountTransaction>\n" +
+      `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+      `<server>local</server>\n` +
+      `<transactionNum>${transNum}</transactionNum>\n` +
+      `<action>Subtracting amount to buy stock</action>\n` +
+      `<username>${user}</username>\n` +
+      `<funds>${newFunds}</funds>\n` +
+      "</accountTransaction>\n";
+      dumpFile.write(accountTransactionBlock);
+      return true;
+    }
+    return false;
+  });
 
   //create the transaction history
   await Transaction.create(TransactionObject)
     .then((status) => {
       if (status) {
+        const systemEventBlock = "<systemEvent>\n" +
+        `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+        `<server>local</server>\n` +
+        `<transactionNum>${transNum}</transactionNum>\n` +
+        `<command>Recording Transaction</command>\n` +
+        `<username>${user}</username>\n` +
+        `<stockSymbol>${TransactionObject.StockSymbol}</stockSymbol>\n` +
+        "</systemEvent>\n"
+        dumpFile.write(systemEventBlock);
         return true;
       }
       return false;
@@ -93,6 +132,15 @@ exports.commit_buy = async (user, buyObject, dumpFile) => {
       await OwnedStocks.create(StockObject)
         .then((status) => {
           if (status) {
+            const systemEventBlock = "<systemEvent>\n" +
+            `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+            `<server>local</server>\n` +
+            `<transactionNum>${transNum}</transactionNum>\n` +
+            `<command>Adding Stock to user portfolio</command>\n` +
+            `<username>${user}</username>\n` +
+            `<stockSymbol>${TransactionObject.StockSymbol}</stockSymbol>\n` +
+            "</systemEvent>\n"
+            dumpFile.write(systemEventBlock);
             return true;
           }
           return false;
@@ -110,7 +158,21 @@ exports.commit_buy = async (user, buyObject, dumpFile) => {
       await OwnedStocks.update(
         { StockAmount: newAmount, StockAveragePrice: newPriceAverage },
         { where: { UserID: user, StockSymbol: stock } }
-      );
+      ).then((status) => {
+        if (status) {
+          const systemEventBlock = "<systemEvent>\n" +
+          `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+          `<server>local</server>\n` +
+          `<transactionNum>${transNum}</transactionNum>\n` +
+          `<command>Adding Stock to user portfolio</command>\n` +
+          `<username>${user}</username>\n` +
+          `<stockSymbol>${TransactionObject.StockSymbol}</stockSymbol>\n` +
+          "</systemEvent>\n"
+          dumpFile.write(systemEventBlock);
+          return true;
+        }
+        return false;
+      });
     }
   });
 };
@@ -120,17 +182,17 @@ exports.cancel_buy = (user) => {
   // Conditions: The user must have executed a BUY command within the previous 60 seconds
 };
 
-exports.set_buy_amount = (user, stock, amount, dumpFile) => {
+exports.set_buy_amount = (user, stock, amount, dumpFile, transNum) => {
   // Purpose: Sets a defined amount of the given stock to buy when the current stock price is less than or equal to the BUY_TRIGGER
   // Conditions: The user's cash account must be greater than or equal to the BUY amount at the time the transaction occurs
 };
 
-exports.cancel_set_buy = (user, stock, dumpFile) => {
+exports.cancel_set_buy = (user, stock, dumpFile, transNum) => {
   // Purpose: Cancels a SET_BUY command issued for the given stock
   // Conditions: The must have been a SET_BUY Command issued for the given stock by the user
 };
 
-exports.set_buy_trigger = (user, stock, amount, dumpFile) => {
+exports.set_buy_trigger = (user, stock, amount, dumpFile, transNum) => {
   // Purpose: Sets the trigger point base on the current stock price when any SET_BUY will execute.
   // Conditions: The user must have specified a SET_BUY_AMOUNT prior to setting a SET_BUY_TRIGGER
 };
