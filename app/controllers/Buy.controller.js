@@ -133,11 +133,10 @@ exports.set_buy_amount = async (user, stock, amount, dumpFile) => {
   };
 
   //reserve funds for user
-  console.log(amount * -1);
   await misc.add(user, amount * -1);
 
   //create the trigger
-  await Trigger.findAll({ where: { UserID: user, StockSymbol: stock } }).then(
+  await Trigger.findAll({ where: { UserID: user, StockSymbol: stock, TriggerType: "buy" } }).then(
     async (data) => {
       if (data.length !== 0) {
         console.log("error: trigger already exists for this stock");
@@ -163,14 +162,14 @@ exports.cancel_set_buy = async (user, stock, dumpFile) => {
   // Conditions: The must have been a SET_BUY Command issued for the given stock by the user
 
   let triggerValue;
-  await Trigger.findAll({ where: { UserID: user, StockSymbol: stock } }).then(
+  await Trigger.findAll({ where: { UserID: user, StockSymbol: stock, TriggerType: "buy" } }).then(
     async (data) => {
       if (data.length == 0) {
         console.log("error: no trigger set for this stock");
         return;
       }
       triggerValue = parseInt(data[0].dataValues.TriggerAmount);
-      await Trigger.destroy({ where: { UserID: user, StockSymbol: stock } });
+      await Trigger.destroy({ where: { UserID: user, StockSymbol: stock , TriggerType: "buy"} });
     }
   );
 
@@ -182,7 +181,7 @@ exports.set_buy_trigger = async (user, stock, amount, dumpFile) => {
   // Purpose: Sets the trigger point base on the current stock price when any SET_BUY will execute.
   // Conditions: The user must have specified a SET_BUY_AMOUNT prior to setting a SET_BUY_TRIGGER
 
-  await Trigger.findAll({ where: { UserID: user, StockSymbol: stock } }).then(
+  await Trigger.findAll({ where: { UserID: user, StockSymbol: stock, TriggerType: "buy" } }).then(
     async (data) => {
       if (data.length == 0) {
         console.log("This user does not have a buy amount set for this stock");
@@ -194,7 +193,7 @@ exports.set_buy_trigger = async (user, stock, amount, dumpFile) => {
       }
       await Trigger.update(
         { TriggerPrice: amount },
-        { where: { UserID: user, StockSymbol: stock } }
+        { where: { UserID: user, StockSymbol: stock, TriggerType: "buy" } }
       );
     }
   );
