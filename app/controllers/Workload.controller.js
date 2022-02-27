@@ -108,13 +108,13 @@ const readWrite = async () => {
                     sellObject = {};
                     break;
                 case "SET_BUY_AMOUNT":
-                    buy.set_buy_amount(argument[1], argument[2], argument[3], dumpFile);
+                    await buy.set_buy_amount(argument[1], argument[2], argument[3], dumpFile);
                     break;
                 case "CANCEL_SET_BUY":
                     buy.cancel_set_buy(argument[1], argument[2], dumpFile);
                     break;
                 case "SET_BUY_TRIGGER":
-                    buy.set_buy_trigger(argument[1], argument[2], argument[3], dumpFile);
+                    await buy.set_buy_trigger(argument[1], argument[2], argument[3], dumpFile);
                     break;
                 case "SET_SELL_AMOUNT":
                     sell.set_sell_amount(argument[1], argument[2], argument[3], dumpFile);

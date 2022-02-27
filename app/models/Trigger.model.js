@@ -21,7 +21,6 @@ module.exports = (sequelize, Sequelize) => {
         },
         TriggerPrice: {    
             type: Sequelize.DECIMAL(18,2),
-            allowNull: false,
         },
     }, {
         freezeTableName: true,
