@@ -13,7 +13,19 @@ exports.sell = async (user, stock, amount, dumpFile, transNum) => {
   const stockQuote = misc.quote(user, stock, dumpFile, transNum);
   const sellAmount = Math.floor(amount / stockQuote);
   if (amount < stockQuote) {
-    console.log("error: stock quote too high for desired amount");
+    const errMsg = "Stock Quote too high for desired amount";
+    console.log("error: " + errMsg);
+    var errorBlock = "<errorEvent>\n" + 
+    `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+    `<server>local</server>\n` +
+    `<transactionNum>${transNum}</transactionNum>\n` +
+    `<command>SELL</command>\n` +
+    `<username>${user}</username>\n` +
+    `<stockSymbol>${stock}</stockSymbol>\n` +
+    `<funds>${amount}</funds>\n` +
+    `<errorMessage>${errMsg}</errorMessage>\n` +
+    "</errorEvent>\n"
+    dumpFile.write(errorBlock);
     return;
   }
 
@@ -22,11 +34,35 @@ exports.sell = async (user, stock, amount, dumpFile, transNum) => {
     where: { UserID: user, StockSymbol: stock },
   }).then(async (data) => {
     if (data.length == 0) {
-      console.log("error: user does not own this stock");
+      const errMsg = "Account " + user + " does not exist or does not own the stock";
+      console.log("error: " + errMsg);
+      var errorBlock = "<errorEvent>\n" + 
+      `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+      `<server>local</server>\n` +
+      `<transactionNum>${transNum}</transactionNum>\n` +
+      `<command>SELL</command>\n` +
+      `<username>${user}</username>\n` +
+      `<stockSymbol>${stock}</stockSymbol>\n` +
+      `<funds>${amount}</funds>\n` +
+      `<errorMessage>${errMsg}</errorMessage>\n` +
+      "</errorEvent>\n"
+      dumpFile.write(errorBlock);
       return;
     }
     if (data[0].dataValues.StockAmount < sellAmount) {
-      console.log("error: user does not have enough stock to sell");
+      const errMsg = "Account " + user + " does not have enough stock to sell";
+        console.log("error: " + errMsg);
+        var errorBlock = "<errorEvent>\n" + 
+        `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+        `<server>local</server>\n` +
+        `<transactionNum>${transNum}</transactionNum>\n` +
+        `<command>BUY</command>\n` +
+        `<username>${user}</username>\n` +
+        `<stockSymbol>${stock}</stockSymbol>\n` +
+        `<funds>${amount}</funds>\n` +
+        `<errorMessage>${errMsg}</errorMessage>\n` +
+        "</errorEvent>\n"
+        dumpFile.write(errorBlock);
       return;
     }
     const oldAmount = parseInt(data[0].dataValues.StockAmount);
@@ -48,7 +84,17 @@ exports.commit_sell = async (user, sellObject, dumpFile, transNum) => {
   // Condition: The user must have executed a SELL command within the previous 60 seconds
 
   if (!sellObject?.stock || user !== sellObject.user) {
-    console.log("error: no sell ready to be committed");
+    const errMsg = "No sell to be committed";
+    console.log("error: " + errMsg);
+    var errorBlock = "<errorEvent>\n" + 
+    `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+    `<server>local</server>\n` +
+    `<transactionNum>${transNum}</transactionNum>\n` +
+    `<command>COMMIT_SELL</command>\n` +
+    `<username>${user}</username>\n` +
+    `<errorMessage>${errMsg}</errorMessage>\n` +
+    "</errorEvent>\n"
+    dumpFile.write(errorBlock);
     return;
   }
 
@@ -70,6 +116,15 @@ exports.commit_sell = async (user, sellObject, dumpFile, transNum) => {
   await Transaction.create(TransactionObject)
     .then((status) => {
       if (status) {
+        const systemEventBlock = "<systemEvent>\n" +
+        `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+        `<server>local</server>\n` +
+        `<transactionNum>${transNum}</transactionNum>\n` +
+        `<command>Recording Transaction</command>\n` +
+        `<username>${user}</username>\n` +
+        `<stockSymbol>${stock}</stockSymbol>\n` +
+        "</systemEvent>\n"
+        dumpFile.write(systemEventBlock);
         return true;
       }
       return false;
@@ -83,7 +138,25 @@ exports.commit_sell = async (user, sellObject, dumpFile, transNum) => {
   await OwnedStocks.update(
     { StockAmount: newAmount },
     { where: { UserID: user, StockSymbol: stock } }
-  );
+  ).then((status) => {
+    if (status) {
+      const systemEventBlock = "<systemEvent>\n" +
+      `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+      `<server>local</server>\n` +
+      `<transactionNum>${transNum}</transactionNum>\n` +
+      `<command>Removing stock from user portfolio</command>\n` +
+      `<username>${user}</username>\n` +
+      `<stockSymbol>${stock}</stockSymbol>\n` +
+      "</systemEvent>\n"
+      dumpFile.write(systemEventBlock);
+      return true;
+    }
+    return false;
+  })
+  .catch((err) => {
+    console.log(err);
+    return false;
+  });;
 };
 
 exports.cancel_sell = (user, dumpFile, transNum) => {

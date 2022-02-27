@@ -5,20 +5,6 @@ const User = db.User;
 const Transaction = db.Transaction;
 const OwnedStocks = db.OwnedStocks;
 
-exports.writeErrorBlock = (dumpFile, transNum, user, stock, amount, msg) => {
-  var errorBlock = "<errorEvent>\n" + 
-    `<timestamp>${new Date().valueOf()}</timestamp>\n` +
-    `<server>local</server>\n` +
-    `<transactionNum>${transNum}</transactionNum>\n` +
-    `<command>BUY</command>\n` +
-    `<username>${user}</username>\n` +
-    `<stockSymbol>${stock}</stockSymbol>\n` +
-    `<funds>${amount}</funds>\n` +
-    `<errorMessage>${errMsg}</errorMessage>\n` +
-    "</errorEvent>\n"
-    dumpFile.write(errorBlock);
-}
-
 exports.add = async (userid, amount, dumpFile, transNum) => {
   // Purpose: Add the given amount of money to the users' account
   const userObj = {

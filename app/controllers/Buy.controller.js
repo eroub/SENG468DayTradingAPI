@@ -16,16 +16,36 @@ exports.buy = async (user, stock, amount, dumpFile, transNum) => {
   if(amount < stockQuote){
     const errMsg = "Stock Quote too high for desired amount";
     console.log("error: " + errMsg);
-    misc.writeErrorBlock(dumpFile, transNum, user, stock, amount, errMsg);
+    var errorBlock = "<errorEvent>\n" + 
+    `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+    `<server>local</server>\n` +
+    `<transactionNum>${transNum}</transactionNum>\n` +
+    `<command>BUY</command>\n` +
+    `<username>${user}</username>\n` +
+    `<stockSymbol>${stock}</stockSymbol>\n` +
+    `<funds>${amount}</funds>\n` +
+    `<errorMessage>${errMsg}</errorMessage>\n` +
+    "</errorEvent>\n"
+    dumpFile.write(errorBlock);
     return;
   }
 
   let newFunds;
   await User.findAll({ where: { UserName: user } }).then(async (data) => {
     if (data.length == 0) {
-      const errMsg = "Account " + user + " does not exist";
+      const errMsg = "Account " + user + " does not exist or does not own the stock";
       console.log("error: " + errMsg);
-      misc.writeErrorBlock(dumpFile, transNum, user, stock, amount, errMsg);
+      var errorBlock = "<errorEvent>\n" + 
+      `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+      `<server>local</server>\n` +
+      `<transactionNum>${transNum}</transactionNum>\n` +
+      `<command>BUY</command>\n` +
+      `<username>${user}</username>\n` +
+      `<stockSymbol>${stock}</stockSymbol>\n` +
+      `<funds>${amount}</funds>\n` +
+      `<errorMessage>${errMsg}</errorMessage>\n` +
+      "</errorEvent>\n"
+      dumpFile.write(errorBlock);
       return;
     } else {
       const spendAmount = buyAmount * stockQuote;
@@ -34,7 +54,17 @@ exports.buy = async (user, stock, amount, dumpFile, transNum) => {
       if (newFunds < 0) {
         const errMsg = "Account " + user + " has insufficient funds";
         console.log("error: " + errMsg);
-        misc.writeErrorBlock(dumpFile, transNum, user, stock, amount, errMsg);
+        var errorBlock = "<errorEvent>\n" + 
+        `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+        `<server>local</server>\n` +
+        `<transactionNum>${transNum}</transactionNum>\n` +
+        `<command>BUY</command>\n` +
+        `<username>${user}</username>\n` +
+        `<stockSymbol>${stock}</stockSymbol>\n` +
+        `<funds>${amount}</funds>\n` +
+        `<errorMessage>${errMsg}</errorMessage>\n` +
+        "</errorEvent>\n"
+        dumpFile.write(errorBlock);
         return;
       }
     }
@@ -183,7 +213,7 @@ exports.cancel_buy = async (user) => {
   // Conditions: The user must have executed a BUY command within the previous 60 seconds
 };
 
-exports.set_buy_amount = (user, stock, amount, dumpFile, transNum) => {
+exports.set_buy_amount = async (user, stock, amount, dumpFile, transNum) => {
   // Purpose: Sets a defined amount of the given stock to buy when the current stock price is less than or equal to the BUY_TRIGGER
   // Conditions: The user's cash account must be greater than or equal to the BUY amount at the time the transaction occurs
 
@@ -202,12 +232,33 @@ exports.set_buy_amount = (user, stock, amount, dumpFile, transNum) => {
   await Trigger.findAll({ where: { UserID: user, StockSymbol: stock } }).then(
     async (data) => {
       if (data.length !== 0) {
-        console.log("error: trigger already exists for this stock");
+        const errMsg = "Trigger already exists for this stock";
+        console.log("error: " + errMsg);
+        var errorBlock = "<errorEvent>\n" + 
+        `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+        `<server>local</server>\n` +
+        `<transactionNum>${transNum}</transactionNum>\n` +
+        `<command>SET_BUY_AMOUNT</command>\n` +
+        `<username>${user}</username>\n` +
+        `<stockSymbol>${stock}</stockSymbol>\n` +
+        `<funds>${amount}</funds>\n` +
+        `<errorMessage>${errMsg}</errorMessage>\n` +
+        "</errorEvent>\n"
+        dumpFile.write(errorBlock);
         return;
       }
       await Trigger.create(TriggerObject)
         .then((status) => {
           if (status) {
+            const systemEventBlock = "<systemEvent>\n" +
+            `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+            `<server>local</server>\n` +
+            `<transactionNum>${transNum}</transactionNum>\n` +
+            `<command>Creating set buy amount for stock</command>\n` +
+            `<username>${user}</username>\n` +
+            `<stockSymbol>${stock}</stockSymbol>\n` +
+            "</systemEvent>\n"
+            dumpFile.write(systemEventBlock);
             return true;
           }
           return false;
@@ -220,7 +271,7 @@ exports.set_buy_amount = (user, stock, amount, dumpFile, transNum) => {
   );
 };
 
-exports.cancel_set_buy = (user, stock, dumpFile, transNum) => {
+exports.cancel_set_buy = async (user, stock, dumpFile, transNum) => {
   // Purpose: Cancels a SET_BUY command issued for the given stock
   // Conditions: The must have been a SET_BUY Command issued for the given stock by the user
 
@@ -228,11 +279,37 @@ exports.cancel_set_buy = (user, stock, dumpFile, transNum) => {
   await Trigger.findAll({ where: { UserID: user, StockSymbol: stock } }).then(
     async (data) => {
       if (data.length == 0) {
-        console.log("error: no trigger set for this stock");
+        const errMsg = "No trigger set for this stock";
+        console.log("error: " + errMsg);
+        var errorBlock = "<errorEvent>\n" + 
+        `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+        `<server>local</server>\n` +
+        `<transactionNum>${transNum}</transactionNum>\n` +
+        `<command>CANCEL_SET_BUY</command>\n` +
+        `<username>${user}</username>\n` +
+        `<errorMessage>${errMsg}</errorMessage>\n` +
+        "</errorEvent>\n"
+        dumpFile.write(errorBlock);
         return;
       }
       triggerValue = parseInt(data[0].dataValues.TriggerAmount);
-      await Trigger.destroy({ where: { UserID: user, StockSymbol: stock } });
+      await Trigger.destroy({ where: { UserID: user, StockSymbol: stock } })
+      .then((status) => {
+        if(status) {
+          const systemEventBlock = "<systemEvent>\n" +
+          `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+          `<server>local</server>\n` +
+          `<transactionNum>${transNum}</transactionNum>\n` +
+          `<command>Cancelling set buy for stock</command>\n` +
+          `<username>${user}</username>\n` +
+          `<stockSymbol>${stock}</stockSymbol>\n` +
+          "</systemEvent>\n"
+          dumpFile.write(systemEventBlock);
+          return true;
+        } else {
+          return false;
+        }
+      });
     }
   );
 
@@ -240,24 +317,63 @@ exports.cancel_set_buy = (user, stock, dumpFile, transNum) => {
   if(triggerValue) misc.add(user, triggerValue);
 };
 
-exports.set_buy_trigger = (user, stock, amount, dumpFile, transNum) => {
+exports.set_buy_trigger = async (user, stock, amount, dumpFile, transNum) => {
   // Purpose: Sets the trigger point base on the current stock price when any SET_BUY will execute.
   // Conditions: The user must have specified a SET_BUY_AMOUNT prior to setting a SET_BUY_TRIGGER
 
   await Trigger.findAll({ where: { UserID: user, StockSymbol: stock } }).then(
     async (data) => {
       if (data.length == 0) {
-        console.log("This user does not have a buy amount set for this stock");
+        const errMsg = user + " does not have buy amount set for this stock";
+        console.log("error: " + errMsg);
+        var errorBlock = "<errorEvent>\n" + 
+        `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+        `<server>local</server>\n` +
+        `<transactionNum>${transNum}</transactionNum>\n` +
+        `<command>SET_BUY_TRIGGER</command>\n` +
+        `<username>${user}</username>\n` +
+        `<stockSymbol>${stock}</stockSymbol>\n` +
+        `<funds>${amount}</funds>\n` +
+        `<errorMessage>${errMsg}</errorMessage>\n` +
+        "</errorEvent>\n"
+        dumpFile.write(errorBlock);
         return;
       }
       if (data[0].dataValues.TriggerPrice) {
-        console.log("There is already a buy point set for this stock");
+        const errMsg = user + " already has a buy point set for this stock";
+        console.log("error: " + errMsg);
+        var errorBlock = "<errorEvent>\n" + 
+        `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+        `<server>local</server>\n` +
+        `<transactionNum>${transNum}</transactionNum>\n` +
+        `<command>BUY</command>\n` +
+        `<username>${user}</username>\n` +
+        `<stockSymbol>${stock}</stockSymbol>\n` +
+        `<funds>${amount}</funds>\n` +
+        `<errorMessage>${errMsg}</errorMessage>\n` +
+        "</errorEvent>\n"
+        dumpFile.write(errorBlock);
         return;
       }
       await Trigger.update(
         { TriggerPrice: amount },
         { where: { UserID: user, StockSymbol: stock } }
-      );
+      ).then((status) => {
+        if(status) {
+          const systemEventBlock = "<systemEvent>\n" +
+          `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+          `<server>local</server>\n` +
+          `<transactionNum>${transNum}</transactionNum>\n` +
+          `<command>Updating trigger</command>\n` +
+          `<username>${user}</username>\n` +
+          `<stockSymbol>${stock}</stockSymbol>\n` +
+          "</systemEvent>\n"
+          dumpFile.write(systemEventBlock);
+          return true;
+        } else {
+          return false;
+        }
+      });
     }
   );
 };
