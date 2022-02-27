@@ -16,16 +16,17 @@ exports.sell = async (user, stock, amount, dumpFile, transNum) => {
   if (amount < stockQuote) {
     const errMsg = "Stock Quote too high for desired amount";
     console.log("error: " + errMsg);
-    var errorBlock = "<errorEvent>\n" + 
-    `<timestamp>${new Date().valueOf()}</timestamp>\n` +
-    `<server>local</server>\n` +
-    `<transactionNum>${transNum}</transactionNum>\n` +
-    `<command>SELL</command>\n` +
-    `<username>${user}</username>\n` +
-    `<stockSymbol>${stock}</stockSymbol>\n` +
-    `<funds>${amount}</funds>\n` +
-    `<errorMessage>${errMsg}</errorMessage>\n` +
-    "</errorEvent>\n"
+    var errorBlock =
+      "<errorEvent>\n" +
+      `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+      `<server>local</server>\n` +
+      `<transactionNum>${transNum}</transactionNum>\n` +
+      `<command>SELL</command>\n` +
+      `<username>${user}</username>\n` +
+      `<stockSymbol>${stock}</stockSymbol>\n` +
+      `<funds>${amount}</funds>\n` +
+      `<errorMessage>${errMsg}</errorMessage>\n` +
+      "</errorEvent>\n";
     dumpFile.write(errorBlock);
     return;
   }
@@ -35,25 +36,28 @@ exports.sell = async (user, stock, amount, dumpFile, transNum) => {
     where: { UserID: user, StockSymbol: stock },
   }).then(async (data) => {
     if (data.length == 0) {
-      const errMsg = "Account " + user + " does not exist or does not own the stock";
+      const errMsg =
+        "Account " + user + " does not exist or does not own the stock";
       console.log("error: " + errMsg);
-      var errorBlock = "<errorEvent>\n" + 
-      `<timestamp>${new Date().valueOf()}</timestamp>\n` +
-      `<server>local</server>\n` +
-      `<transactionNum>${transNum}</transactionNum>\n` +
-      `<command>SELL</command>\n` +
-      `<username>${user}</username>\n` +
-      `<stockSymbol>${stock}</stockSymbol>\n` +
-      `<funds>${amount}</funds>\n` +
-      `<errorMessage>${errMsg}</errorMessage>\n` +
-      "</errorEvent>\n"
+      var errorBlock =
+        "<errorEvent>\n" +
+        `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+        `<server>local</server>\n` +
+        `<transactionNum>${transNum}</transactionNum>\n` +
+        `<command>SELL</command>\n` +
+        `<username>${user}</username>\n` +
+        `<stockSymbol>${stock}</stockSymbol>\n` +
+        `<funds>${amount}</funds>\n` +
+        `<errorMessage>${errMsg}</errorMessage>\n` +
+        "</errorEvent>\n";
       dumpFile.write(errorBlock);
       return;
     }
     if (data[0].dataValues.StockAmount < sellAmount) {
       const errMsg = "Account " + user + " does not have enough stock to sell";
-        console.log("error: " + errMsg);
-        var errorBlock = "<errorEvent>\n" + 
+      console.log("error: " + errMsg);
+      var errorBlock =
+        "<errorEvent>\n" +
         `<timestamp>${new Date().valueOf()}</timestamp>\n` +
         `<server>local</server>\n` +
         `<transactionNum>${transNum}</transactionNum>\n` +
@@ -62,8 +66,8 @@ exports.sell = async (user, stock, amount, dumpFile, transNum) => {
         `<stockSymbol>${stock}</stockSymbol>\n` +
         `<funds>${amount}</funds>\n` +
         `<errorMessage>${errMsg}</errorMessage>\n` +
-        "</errorEvent>\n"
-        dumpFile.write(errorBlock);
+        "</errorEvent>\n";
+      dumpFile.write(errorBlock);
       return;
     }
     const oldAmount = parseInt(data[0].dataValues.StockAmount);
@@ -87,14 +91,15 @@ exports.commit_sell = async (user, sellObject, dumpFile, transNum) => {
   if (!sellObject?.stock || user !== sellObject.user) {
     const errMsg = "No sell to be committed";
     console.log("error: " + errMsg);
-    var errorBlock = "<errorEvent>\n" + 
-    `<timestamp>${new Date().valueOf()}</timestamp>\n` +
-    `<server>local</server>\n` +
-    `<transactionNum>${transNum}</transactionNum>\n` +
-    `<command>COMMIT_SELL</command>\n` +
-    `<username>${user}</username>\n` +
-    `<errorMessage>${errMsg}</errorMessage>\n` +
-    "</errorEvent>\n"
+    var errorBlock =
+      "<errorEvent>\n" +
+      `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+      `<server>local</server>\n` +
+      `<transactionNum>${transNum}</transactionNum>\n` +
+      `<command>COMMIT_SELL</command>\n` +
+      `<username>${user}</username>\n` +
+      `<errorMessage>${errMsg}</errorMessage>\n` +
+      "</errorEvent>\n";
     dumpFile.write(errorBlock);
     return;
   }
@@ -117,14 +122,15 @@ exports.commit_sell = async (user, sellObject, dumpFile, transNum) => {
   await Transaction.create(TransactionObject)
     .then((status) => {
       if (status) {
-        const systemEventBlock = "<systemEvent>\n" +
-        `<timestamp>${new Date().valueOf()}</timestamp>\n` +
-        `<server>local</server>\n` +
-        `<transactionNum>${transNum}</transactionNum>\n` +
-        `<command>Recording Transaction</command>\n` +
-        `<username>${user}</username>\n` +
-        `<stockSymbol>${stock}</stockSymbol>\n` +
-        "</systemEvent>\n"
+        const systemEventBlock =
+          "<systemEvent>\n" +
+          `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+          `<server>local</server>\n` +
+          `<transactionNum>${transNum}</transactionNum>\n` +
+          `<command>Recording Transaction</command>\n` +
+          `<username>${user}</username>\n` +
+          `<stockSymbol>${stock}</stockSymbol>\n` +
+          "</systemEvent>\n";
         dumpFile.write(systemEventBlock);
         return true;
       }
@@ -139,25 +145,27 @@ exports.commit_sell = async (user, sellObject, dumpFile, transNum) => {
   await OwnedStocks.update(
     { StockAmount: newAmount },
     { where: { UserID: user, StockSymbol: stock } }
-  ).then((status) => {
-    if (status) {
-      const systemEventBlock = "<systemEvent>\n" +
-      `<timestamp>${new Date().valueOf()}</timestamp>\n` +
-      `<server>local</server>\n` +
-      `<transactionNum>${transNum}</transactionNum>\n` +
-      `<command>Removing stock from user portfolio</command>\n` +
-      `<username>${user}</username>\n` +
-      `<stockSymbol>${stock}</stockSymbol>\n` +
-      "</systemEvent>\n"
-      dumpFile.write(systemEventBlock);
-      return true;
-    }
-    return false;
-  })
-  .catch((err) => {
-    console.log(err);
-    return false;
-  });;
+  )
+    .then((status) => {
+      if (status) {
+        const systemEventBlock =
+          "<systemEvent>\n" +
+          `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+          `<server>local</server>\n` +
+          `<transactionNum>${transNum}</transactionNum>\n` +
+          `<command>Removing stock from user portfolio</command>\n` +
+          `<username>${user}</username>\n` +
+          `<stockSymbol>${stock}</stockSymbol>\n` +
+          "</systemEvent>\n";
+        dumpFile.write(systemEventBlock);
+        return true;
+      }
+      return false;
+    })
+    .catch((err) => {
+      console.log(err);
+      return false;
+    });
 };
 
 exports.cancel_sell = (user, dumpFile, transNum) => {
@@ -165,10 +173,10 @@ exports.cancel_sell = (user, dumpFile, transNum) => {
   // Condition: The user must have executed a SELL command within the previous 60 seconds
 };
 
-exports.set_sell_amount = async (user, stock, amount, dumpFile) => {
+exports.set_sell_amount = async (user, stock, amount, dumpFile, transNum) => {
   // Purpose: Sets a defined amount of the specified stock to sell when the current stock price is equal or greater than the sell trigger point
   // Condition: The user must have the specified amount of stock in their account for that stock.
-  
+
   const TriggerObject = {
     UserID: user,
     TriggerType: "sell",
@@ -176,67 +184,77 @@ exports.set_sell_amount = async (user, stock, amount, dumpFile) => {
     TriggerAmount: amount,
   };
 
-  const stockQuote = misc.quote(user, stock, dumpFile);
-
-  //create the trigger 
-  await Trigger.findAll({ where: { UserID: user, StockSymbol: stock, TriggerType: "sell"} }).then(
-    async (data) => {
-      if (data.length !== 0) {
-        console.log("error: trigger already exists for this stock");
-        return;
-      }
-      await Trigger.create(TriggerObject)
-        .then((status) => {
-          if (status) {
-            return true;
-          }
-          return false;
-        })
-        .catch((err) => {
-          console.log(err);
-          return false;     
-        });
+  await OwnedStocks.findAll({
+    where: { UserID: user, StockSymbol: stock },
+  }).then((data) => {
+    if (data.length == 0) {
+      console.log("error: user does not own any of this stock");
+      return;
     }
-  );
+    const stockAmount = parseInt(data[0].dataValues.StockAmount);
+    if (stockAmount < amount) {
+      console.log("error: not enough stock available to set this trigger");
+      return;
+    }
+  });
+
+  //create the trigger
+  await Trigger.findAll({
+    where: { UserID: user, StockSymbol: stock, TriggerType: "sell" },
+  }).then(async (data) => {
+    if (data.length !== 0) {
+      console.log("error: trigger already exists for this stock");
+      return;
+    }
+    await Trigger.create(TriggerObject)
+      .then((status) => {
+        if (status) {
+          return true;
+        }
+        return false;
+      })
+      .catch((err) => {
+        console.log(err);
+        return false;
+      });
+  });
 };
 
-exports.set_sell_trigger = async (user, stock, amount, dumpFile) => {
+exports.set_sell_trigger = async (user, stock, amount, dumpFile, transNum) => {
   // Purpose: Sets the stock price trigger point for executing any SET_SELL triggers associated with the given stock and user
   // Condition: The user must have specified a SET_SELL_AMOUNT prior to setting a SET_SELL_TRIGGER
 
-  await Trigger.findAll({ where: {UserID: user, StockSymbol: stock, TriggerType: "sell"} }).then(
-    async (data) => {
-      if (data.length == 0) {
-        console.log("This user does not have a sell amount set for this stock");
-        return;
-      }
-      if (data[0].dataValues.TriggerPrice) {
-        console.log("There is already a sell point set for this stock");
-        return;
-      }
-      await Trigger.update(
-        { TriggerPrice: amount },
-        { where: {UserID: user, StockSymbol: stock, TriggerType: "sell" } }
-      );
+  await Trigger.findAll({
+    where: { UserID: user, StockSymbol: stock, TriggerType: "sell" },
+  }).then(async (data) => {
+    if (data.length == 0) {
+      console.log("This user does not have a sell amount set for this stock");
+      return;
     }
-  );
+    if (data[0].dataValues.TriggerPrice) {
+      console.log("There is already a sell point set for this stock");
+      return;
+    }
+    await Trigger.update(
+      { TriggerPrice: amount },
+      { where: { UserID: user, StockSymbol: stock, TriggerType: "sell" } }
+    );
+  });
 };
 
-exports.cancel_set_sell = async (user, stock, dumpFile) => {
+exports.cancel_set_sell = async (user, stock, dumpFile, transNum) => {
   // Purpose: Cancels the SET_SELL associated with the given stock and user
   // Condition: The user must have had a previously set SET_SELL for the given stock
-  let triggerValue;
-  await Trigger.findAll({ where: { UserID: user, StockSymbol: stock, TriggerType: "sell" } }).then(
-    async (data) => {
-      if (data.length == 0) {
-        console.log("error: no trigger set for this stock");
-        return;
-      }
-      triggerValue = parseInt(data[0].dataValues.TriggerAmount);
-      await Trigger.destroy({ where: { UserID: user, StockSymbol: stock , TriggerType: "sell"} });
-    }
-  );
 
-  //add the funds back to the user
-  if(triggerValue) misc.add(user, triggerValue);
+  await Trigger.findAll({
+    where: { UserID: user, StockSymbol: stock, TriggerType: "sell" },
+  }).then(async (data) => {
+    if (data.length == 0) {
+      console.log("error: no trigger set for this stock");
+      return;
+    }
+    await Trigger.destroy({
+      where: { UserID: user, StockSymbol: stock, TriggerType: "sell" },
+    });
+  });
 };
