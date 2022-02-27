@@ -1,5 +1,4 @@
 // This file contains the methods for the commands that are neither buys or sells
-const { generateKeyPair } = require('crypto');
 const db = require("../models/index");
 const User = db.User;
 const Transaction = db.Transaction;
@@ -48,15 +47,28 @@ exports.add = async (userid, amount, dumpFile, transNum) => {
         { where: { UserName: userObj.UserName }}
       ).then((status) => {
         if (status) {
-          const accountTransactionBlock = "<accountTransaction>\n" +
-          `<timestamp>${new Date().valueOf()}</timestamp>\n` +
-          `<server>local</server>\n` +
-          `<transactionNum>${transNum}</transactionNum>\n` +
-          `<action>ADD</action>\n` +
-          `<username>${userid}</username>\n` +
-          `<funds>${amount}</funds>\n` +
-          "</accountTransaction>\n";
-          dumpFile.write(accountTransactionBlock);
+          if(amount > 0) {
+            const accountTransactionBlock = "<accountTransaction>\n" +
+            `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+            `<server>local</server>\n` +
+            `<transactionNum>${transNum}</transactionNum>\n` +
+            `<action>ADD</action>\n` +
+            `<username>${userid}</username>\n` +
+            `<funds>${amount}</funds>\n` +
+            "</accountTransaction>\n";
+            dumpFile.write(accountTransactionBlock);
+          } else {
+            const accountTransactionBlock = "<accountTransaction>\n" +
+            `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+            `<server>local</server>\n` +
+            `<transactionNum>${transNum}</transactionNum>\n` +
+            `<action>SELL</action>\n` +
+            `<username>${userid}</username>\n` +
+            `<funds>${amount}</funds>\n` +
+            "</accountTransaction>\n";
+            dumpFile.write(accountTransactionBlock);
+          }
+          
           return true;
         }
         return false;
@@ -109,31 +121,18 @@ exports.quote = (userid, stock, dumpFile, transNum) => {
     stockPrice = basePrice * spikeMag;
   }
 
-  // Generate crypto key
-  // Function gathered from https://www.geeksforgeeks.org/node-js-crypto-generatekeypair-method/
-  var key = "";
-  generateKeyPair('rsa', {
-    modulusLength: 530, 
-    publicExponent: 0x10101,
-    publicKeyEncoding: {
-      type: 'pkcs1',
-      format: 'der'
-    },
-    privateKeyEncoding: {
-      type: 'pkcs8',
-      format: 'der',
-      cipher: 'aes-192-cbc',
-      passphrase: 'SENG468'
+  // Generate random string for crypto key
+  // Function gathered from https://attacomsian.com/blog/javascript-generate-random-string
+  const random = (length = 8) => {
+    // Declare all characters
+    let chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    // Pick characers randomly
+    let str = '';
+    for (let i = 0; i < length; i++) {
+        str += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-  }, (err, publicKey, privateKey) => { // Callback function
-         if(!err) {
-           key = publicKey;
-         } else {
-           // Prints error
-           console.log(err);
-         }
-           
-    });
+    return str;
+  };
 
   // Write to dumpfile a quoteServer block
   var quoteBlock = "<quoteServer>\n" + 
@@ -144,7 +143,7 @@ exports.quote = (userid, stock, dumpFile, transNum) => {
   `<username>${userid}</username>\n` +
   `<stockSymbol>${stock}</stockSymbol>\n` +
   `<price>${stockPrice}</price>\n` +
-  `<cryptokey>${key}</cryptokey>\n` +
+  `<cryptokey>${random(30)}</cryptokey>\n` +
   "</quoteServer>\n"
   dumpFile.write(quoteBlock);
 

@@ -19,18 +19,18 @@ exports.downloadDumpfile = (req,res) => {
     // Execute workload must complete before this can be called
 
     // Res download file
-    res.download(path.resolve(__dirname, "../../InputOutput/dumpfile.txt"));
+    res.download(path.resolve(__dirname, "../../InputOutput/dumpfile.xml"));
 }
 
 // Async function for reading and writing to files
 const readWrite = async () => {
     // Create Dumpfile
-    const fd = fs.openSync("./InputOutput/dumpfile.txt", "w");
+    const fd = fs.openSync("./InputOutput/dumpfile.xml", "w");
 
     // Try reading in the workfile
     try {
         // Create write stream for the dumpfile
-        const dumpFile = fs.createWriteStream(path.resolve(__dirname, "../../InputOutput/dumpfile.txt"), { flags: 'a' });
+        const dumpFile = fs.createWriteStream(path.resolve(__dirname, "../../InputOutput/dumpfile.xml"), { flags: 'a' });
         const data = fs.readFileSync(path.resolve(__dirname, "../../InputOutput/workloadfile.txt"), 'UTF-8');
 
         // Write <?xml> and <log> 
@@ -55,6 +55,8 @@ const readWrite = async () => {
                 var commandBlock = "<userCommand>\n" + 
                 `<timestamp>${new Date().valueOf()}</timestamp>\n` +
                 `<transactionNum>${index+1}</transactionNum>\n` +
+                `<server>local</server>\n` +
+                `<filename>dumpfile.xml</filename>\n` +
                 `<command>${argument[0]}</command>\n` +
                 `<username>${argument[1]}</username>\n`
 

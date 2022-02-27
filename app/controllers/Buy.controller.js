@@ -129,7 +129,7 @@ exports.commit_buy = async (user, buyObject, dumpFile, transNum) => {
           `<timestamp>${new Date().valueOf()}</timestamp>\n` +
           `<server>local</server>\n` +
           `<transactionNum>${transNum}</transactionNum>\n` +
-          `<action>Subtracting amount to buy stock</action>\n` +
+          `<action>Remove</action>\n` +
           `<username>${user}</username>\n` +
           `<funds>${newFunds}</funds>\n` +
           "</accountTransaction>\n";
@@ -149,7 +149,7 @@ exports.commit_buy = async (user, buyObject, dumpFile, transNum) => {
           `<timestamp>${new Date().valueOf()}</timestamp>\n` +
           `<server>local</server>\n` +
           `<transactionNum>${transNum}</transactionNum>\n` +
-          `<command>Recording Transaction</command>\n` +
+          `<command>COMMIT_BUY</command>\n` +
           `<username>${user}</username>\n` +
           `<stockSymbol>${TransactionObject.StockSymbol}</stockSymbol>\n` +
           "</systemEvent>\n";
@@ -177,7 +177,7 @@ exports.commit_buy = async (user, buyObject, dumpFile, transNum) => {
               `<timestamp>${new Date().valueOf()}</timestamp>\n` +
               `<server>local</server>\n` +
               `<transactionNum>${transNum}</transactionNum>\n` +
-              `<command>Adding Stock to user portfolio</command>\n` +
+              `<command>COMMIT_BUY</command>\n` +
               `<username>${user}</username>\n` +
               `<stockSymbol>${TransactionObject.StockSymbol}</stockSymbol>\n` +
               "</systemEvent>\n";
@@ -206,7 +206,7 @@ exports.commit_buy = async (user, buyObject, dumpFile, transNum) => {
             `<timestamp>${new Date().valueOf()}</timestamp>\n` +
             `<server>local</server>\n` +
             `<transactionNum>${transNum}</transactionNum>\n` +
-            `<command>Adding Stock to user portfolio</command>\n` +
+            `<command>COMMIT_BUY</command>\n` +
             `<username>${user}</username>\n` +
             `<stockSymbol>${TransactionObject.StockSymbol}</stockSymbol>\n` +
             "</systemEvent>\n";
@@ -236,7 +236,7 @@ exports.set_buy_amount = async (user, stock, amount, dumpFile, transNum) => {
   };
 
   //reserve funds for user
-  await misc.add(user, amount * -1);
+  await misc.add(user, amount * -1, dumpFile, transNum);
 
   //create the trigger
   await Trigger.findAll({
@@ -267,7 +267,7 @@ exports.set_buy_amount = async (user, stock, amount, dumpFile, transNum) => {
             `<timestamp>${new Date().valueOf()}</timestamp>\n` +
             `<server>local</server>\n` +
             `<transactionNum>${transNum}</transactionNum>\n` +
-            `<command>Creating set buy amount for stock</command>\n` +
+            `<command>SET_BUY_AMOUNT</command>\n` +
             `<username>${user}</username>\n` +
             `<stockSymbol>${stock}</stockSymbol>\n` +
             "</systemEvent>\n";
@@ -316,7 +316,7 @@ exports.cancel_set_buy = async (user, stock, dumpFile, transNum) => {
           `<timestamp>${new Date().valueOf()}</timestamp>\n` +
           `<server>local</server>\n` +
           `<transactionNum>${transNum}</transactionNum>\n` +
-          `<command>Cancelling set buy for stock</command>\n` +
+          `<command>CANCEL_SET_BUY</command>\n` +
           `<username>${user}</username>\n` +
           `<stockSymbol>${stock}</stockSymbol>\n` +
           "</systemEvent>\n";
@@ -329,7 +329,7 @@ exports.cancel_set_buy = async (user, stock, dumpFile, transNum) => {
   });
 
   //add the funds back to the user
-  if (triggerValue) misc.add(user, triggerValue);
+  if (triggerValue) misc.add(user, triggerValue, dumpFile, transNum);
 };
 
 exports.set_buy_trigger = async (user, stock, amount, dumpFile, transNum) => {
@@ -364,7 +364,7 @@ exports.set_buy_trigger = async (user, stock, amount, dumpFile, transNum) => {
         `<timestamp>${new Date().valueOf()}</timestamp>\n` +
         `<server>local</server>\n` +
         `<transactionNum>${transNum}</transactionNum>\n` +
-        `<command>BUY</command>\n` +
+        `<command>SET_BUY_TRIGGER</command>\n` +
         `<username>${user}</username>\n` +
         `<stockSymbol>${stock}</stockSymbol>\n` +
         `<funds>${amount}</funds>\n` +
@@ -383,7 +383,7 @@ exports.set_buy_trigger = async (user, stock, amount, dumpFile, transNum) => {
           `<timestamp>${new Date().valueOf()}</timestamp>\n` +
           `<server>local</server>\n` +
           `<transactionNum>${transNum}</transactionNum>\n` +
-          `<command>Updating trigger</command>\n` +
+          `<command>SET_BUY_TRIGGER</command>\n` +
           `<username>${user}</username>\n` +
           `<stockSymbol>${stock}</stockSymbol>\n` +
           "</systemEvent>\n";

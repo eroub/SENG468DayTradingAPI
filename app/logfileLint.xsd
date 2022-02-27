@@ -102,9 +102,9 @@ addition to an optional debug message  -->
 <!--  All Unix timestamps provided must be within the current semester  -->
 <xsd:simpleType name="unixTimeLimits">
 <xsd:restriction base="xsd:integer">
-<xsd:minInclusive value="1609459200000"/>
+<xsd:minInclusive value="1641059735000"/>
 <!--  Jan 1, 2021  -->
-<xsd:maxInclusive value="1619827200000"/>
+<xsd:maxInclusive value="1651337735000"/>
 <!-- May 1, 2021  -->
 </xsd:restriction>
 </xsd:simpleType>
