@@ -32,7 +32,7 @@ exports.sell = async (user, stock, amount, dumpFile, transNum) => {
   }
 
   let newAmount;
-  await OwnedStocks.findAll({
+  const status = await OwnedStocks.findAll({
     where: { UserID: user, StockSymbol: stock },
   }).then(async (data) => {
     if (data.length == 0) {
@@ -51,7 +51,7 @@ exports.sell = async (user, stock, amount, dumpFile, transNum) => {
         `<errorMessage>${errMsg}</errorMessage>\n` +
         "</errorEvent>\n";
       dumpFile.write(errorBlock);
-      return;
+      return false;
     }
     if (data[0].dataValues.StockAmount < sellAmount) {
       const errMsg = "Account " + user + " does not have enough stock to sell";
@@ -68,11 +68,13 @@ exports.sell = async (user, stock, amount, dumpFile, transNum) => {
         `<errorMessage>${errMsg}</errorMessage>\n` +
         "</errorEvent>\n";
       dumpFile.write(errorBlock);
-      return;
+      return false;
     }
     const oldAmount = parseInt(data[0].dataValues.StockAmount);
     newAmount = oldAmount - sellAmount;
+    return true;
   });
+  if(!status) return;
 
   const SellObject = {
     user: user,
@@ -184,7 +186,7 @@ exports.set_sell_amount = async (user, stock, amount, dumpFile, transNum) => {
     TriggerAmount: amount,
   };
 
-  await OwnedStocks.findAll({
+  const status = await OwnedStocks.findAll({
     where: { UserID: user, StockSymbol: stock },
   }).then((data) => {
     if (data.length == 0) {
@@ -203,7 +205,7 @@ exports.set_sell_amount = async (user, stock, amount, dumpFile, transNum) => {
         `<errorMessage>${errMsg}</errorMessage>\n` +
         "</errorEvent>\n";
       dumpFile.write(errorBlock);
-      return;
+      return false;
     }
     const stockAmount = parseInt(data[0].dataValues.StockAmount);
     if (stockAmount < amount) {
@@ -221,10 +223,12 @@ exports.set_sell_amount = async (user, stock, amount, dumpFile, transNum) => {
         `<errorMessage>${errMsg}</errorMessage>\n` +
         "</errorEvent>\n";
       dumpFile.write(errorBlock);
-      return;
+      return false;
     }
+    return true;
   });
-
+  if(!status) return;
+  
   //create the trigger
   await Trigger.findAll({
     where: { UserID: user, StockSymbol: stock, TriggerType: "sell" },

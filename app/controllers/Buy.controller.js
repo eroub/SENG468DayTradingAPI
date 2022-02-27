@@ -32,30 +32,11 @@ exports.buy = async (user, stock, amount, dumpFile, transNum) => {
   }
 
   let newFunds;
-  await User.findAll({ where: { UserName: user } }).then(async (data) => {
-    if (data.length == 0) {
-      const errMsg =
-        "Account " + user + " does not exist or does not own the stock";
-      console.log("error: " + errMsg);
-      var errorBlock =
-        "<errorEvent>\n" +
-        `<timestamp>${new Date().valueOf()}</timestamp>\n` +
-        `<server>local</server>\n` +
-        `<transactionNum>${transNum}</transactionNum>\n` +
-        `<command>BUY</command>\n` +
-        `<username>${user}</username>\n` +
-        `<stockSymbol>${stock}</stockSymbol>\n` +
-        `<funds>${amount}</funds>\n` +
-        `<errorMessage>${errMsg}</errorMessage>\n` +
-        "</errorEvent>\n";
-      dumpFile.write(errorBlock);
-      return;
-    } else {
-      const spendAmount = buyAmount * stockQuote;
-      const currentFunds = parseInt(data[0].dataValues.Funds);
-      newFunds = currentFunds - spendAmount;
-      if (newFunds < 0) {
-        const errMsg = "Account " + user + " has insufficient funds";
+  const status = await User.findAll({ where: { UserName: user } }).then(
+    async (data) => {
+      if (data.length == 0) {
+        const errMsg =
+          "Account " + user + " does not exist or does not own the stock";
         console.log("error: " + errMsg);
         var errorBlock =
           "<errorEvent>\n" +
@@ -69,10 +50,33 @@ exports.buy = async (user, stock, amount, dumpFile, transNum) => {
           `<errorMessage>${errMsg}</errorMessage>\n` +
           "</errorEvent>\n";
         dumpFile.write(errorBlock);
-        return;
+        return false;
+      } else {
+        const spendAmount = buyAmount * stockQuote;
+        const currentFunds = parseInt(data[0].dataValues.Funds);
+        newFunds = currentFunds - spendAmount;
+        if (newFunds < 0) {
+          const errMsg = "Account " + user + " has insufficient funds";
+          console.log("error: " + errMsg);
+          var errorBlock =
+            "<errorEvent>\n" +
+            `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+            `<server>local</server>\n` +
+            `<transactionNum>${transNum}</transactionNum>\n` +
+            `<command>BUY</command>\n` +
+            `<username>${user}</username>\n` +
+            `<stockSymbol>${stock}</stockSymbol>\n` +
+            `<funds>${amount}</funds>\n` +
+            `<errorMessage>${errMsg}</errorMessage>\n` +
+            "</errorEvent>\n";
+          dumpFile.write(errorBlock);
+          return false;
+        }
       }
+      return true;
     }
-  });
+  );
+  if (!status) return;
 
   const BuyObject = {
     user: user,
@@ -235,9 +239,6 @@ exports.set_buy_amount = async (user, stock, amount, dumpFile, transNum) => {
     TriggerAmount: amount,
   };
 
-  //reserve funds for user
-  await misc.add(user, amount * -1, dumpFile, transNum);
-
   //create the trigger
   await Trigger.findAll({
     where: { UserID: user, StockSymbol: stock, TriggerType: "buy" },
@@ -280,6 +281,8 @@ exports.set_buy_amount = async (user, stock, amount, dumpFile, transNum) => {
         console.log(err);
         return false;
       });
+    //reserve funds for user
+    await misc.add(user, amount * -1, dumpFile, transNum);
   });
 };
 
@@ -326,10 +329,9 @@ exports.cancel_set_buy = async (user, stock, dumpFile, transNum) => {
         return false;
       }
     });
+    //add the funds back to the user
+    if (triggerValue) misc.add(user, triggerValue, dumpFile, transNum);
   });
-
-  //add the funds back to the user
-  if (triggerValue) misc.add(user, triggerValue, dumpFile, transNum);
 };
 
 exports.set_buy_trigger = async (user, stock, amount, dumpFile, transNum) => {

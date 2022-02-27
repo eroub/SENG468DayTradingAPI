@@ -1,7 +1,7 @@
 // This file contains the methods for the commands that are neither buys or sells
 const db = require("../models/index");
 const buy = require("./Buy.controller");
-const sell  = require("./Sell.controller");
+const sell = require("./Sell.controller");
 const User = db.User;
 const Transaction = db.Transaction;
 const OwnedStocks = db.OwnedStocks;
@@ -15,69 +15,74 @@ exports.add = async (userid, amount, dumpFile, transNum) => {
   };
 
   // Check if user exists
-  await User.findAll({ where: { UserName: userObj.UserName }}).then(async (data) => {
-    if (data.length == 0) {
-      // User does not exist yet create user
-      await User.create(userObj)
-        .then((status) => {
+  await User.findAll({ where: { UserName: userObj.UserName } }).then(
+    async (data) => {
+      if (data.length == 0) {
+        // User does not exist yet create user
+        await User.create(userObj)
+          .then((status) => {
+            if (status) {
+              const accountTransactionBlock =
+                "<accountTransaction>\n" +
+                `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+                `<server>local</server>\n` +
+                `<transactionNum>${transNum}</transactionNum>\n` +
+                `<action>ADD</action>\n` +
+                `<username>${userid}</username>\n` +
+                `<funds>${amount}</funds>\n` +
+                "</accountTransaction>\n";
+              dumpFile.write(accountTransactionBlock);
+              return true;
+            }
+            return false;
+          })
+          .catch((err) => {
+            console.log(err);
+            return false;
+          });
+      } else {
+        const newFunds =
+          parseInt(userObj.Funds) + parseInt(data[0].dataValues.Funds);
+        //for cases of adding negative funds
+        if (newFunds < 0) {
+          console.log("insufficient funds");
+        }
+        await User.update(
+          { Funds: newFunds },
+          { where: { UserName: userObj.UserName } }
+        ).then((status) => {
           if (status) {
-            const accountTransactionBlock = "<accountTransaction>\n" +
-            `<timestamp>${new Date().valueOf()}</timestamp>\n` +
-            `<server>local</server>\n` +
-            `<transactionNum>${transNum}</transactionNum>\n` +
-            `<action>ADD</action>\n` +
-            `<username>${userid}</username>\n` +
-            `<funds>${amount}</funds>\n` +
-            "</accountTransaction>\n";
-            dumpFile.write(accountTransactionBlock);
+            if (amount > 0) {
+              const accountTransactionBlock =
+                "<accountTransaction>\n" +
+                `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+                `<server>local</server>\n` +
+                `<transactionNum>${transNum}</transactionNum>\n` +
+                `<action>ADD</action>\n` +
+                `<username>${userid}</username>\n` +
+                `<funds>${amount}</funds>\n` +
+                "</accountTransaction>\n";
+              dumpFile.write(accountTransactionBlock);
+            } else {
+              const accountTransactionBlock =
+                "<accountTransaction>\n" +
+                `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+                `<server>local</server>\n` +
+                `<transactionNum>${transNum}</transactionNum>\n` +
+                `<action>SELL</action>\n` +
+                `<username>${userid}</username>\n` +
+                `<funds>${amount}</funds>\n` +
+                "</accountTransaction>\n";
+              dumpFile.write(accountTransactionBlock);
+            }
+
             return true;
           }
           return false;
-        })
-        .catch((err) => {
-          console.log(err);
-          return false;
         });
-    } else {
-      const newFunds =
-        parseInt(userObj.Funds) + parseInt(data[0].dataValues.Funds);
-      //for cases of adding negative funds
-      if(newFunds < 0){
-        console.log("insufficient funds");
       }
-      await User.update(
-        { Funds: newFunds },
-        { where: { UserName: userObj.UserName }}
-      ).then((status) => {
-        if (status) {
-          if(amount > 0) {
-            const accountTransactionBlock = "<accountTransaction>\n" +
-            `<timestamp>${new Date().valueOf()}</timestamp>\n` +
-            `<server>local</server>\n` +
-            `<transactionNum>${transNum}</transactionNum>\n` +
-            `<action>ADD</action>\n` +
-            `<username>${userid}</username>\n` +
-            `<funds>${amount}</funds>\n` +
-            "</accountTransaction>\n";
-            dumpFile.write(accountTransactionBlock);
-          } else {
-            const accountTransactionBlock = "<accountTransaction>\n" +
-            `<timestamp>${new Date().valueOf()}</timestamp>\n` +
-            `<server>local</server>\n` +
-            `<transactionNum>${transNum}</transactionNum>\n` +
-            `<action>SELL</action>\n` +
-            `<username>${userid}</username>\n` +
-            `<funds>${amount}</funds>\n` +
-            "</accountTransaction>\n";
-            dumpFile.write(accountTransactionBlock);
-          }
-          
-          return true;
-        }
-        return false;
-      });
     }
-  });
+  );
 };
 
 exports.getAllTransactions = (req, res) => {
@@ -128,26 +133,28 @@ exports.quote = (userid, stock, dumpFile, transNum) => {
   // Function gathered from https://attacomsian.com/blog/javascript-generate-random-string
   const random = (length = 8) => {
     // Declare all characters
-    let chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let chars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     // Pick characers randomly
-    let str = '';
+    let str = "";
     for (let i = 0; i < length; i++) {
-        str += chars.charAt(Math.floor(Math.random() * chars.length));
+      str += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return str;
   };
 
   // Write to dumpfile a quoteServer block
-  var quoteBlock = "<quoteServer>\n" + 
-  `<timestamp>${new Date().valueOf()}</timestamp>\n` +
-  `<server>local</server>\n` +
-  `<transactionNum>${transNum}</transactionNum>\n` +
-  `<quoteServerTime>${new Date().valueOf()}</quoteServerTime>\n` +
-  `<username>${userid}</username>\n` +
-  `<stockSymbol>${stock}</stockSymbol>\n` +
-  `<price>${stockPrice}</price>\n` +
-  `<cryptokey>${random(30)}</cryptokey>\n` +
-  "</quoteServer>\n"
+  var quoteBlock =
+    "<quoteServer>\n" +
+    `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+    `<server>local</server>\n` +
+    `<transactionNum>${transNum}</transactionNum>\n` +
+    `<quoteServerTime>${new Date().valueOf()}</quoteServerTime>\n` +
+    `<username>${userid}</username>\n` +
+    `<stockSymbol>${stock}</stockSymbol>\n` +
+    `<price>${stockPrice}</price>\n` +
+    `<cryptokey>${random(30)}</cryptokey>\n` +
+    "</quoteServer>\n";
   dumpFile.write(quoteBlock);
 
   return stockPrice;
@@ -155,9 +162,9 @@ exports.quote = (userid, stock, dumpFile, transNum) => {
 
 exports.checkTriggers = async (dumpFile, transNum) => {
   await Trigger.findAll().then(async (data) => {
-    for(const trigger of data){
+    for (const trigger of data) {
       const triggerPrice = parseInt(trigger.dataValues?.TriggerPrice);
-      if(!triggerPrice){
+      if (!triggerPrice) {
         continue;
       }
       const user = trigger.dataValues.UserID;
@@ -165,26 +172,46 @@ exports.checkTriggers = async (dumpFile, transNum) => {
       const stockQuote = this.quote(user, stockSymbol, dumpFile, transNum);
       const triggerType = trigger.dataValues.TriggerType;
 
-      console.log("Trigger Price is: " + triggerPrice + " Stock Quote is: " + stockQuote);
-      if(triggerType == "sell" && stockQuote < triggerPrice){
+      if (triggerType == "sell" && stockQuote < triggerPrice) {
         continue;
       }
-      if(triggerType == "buy" && stockQuote > triggerPrice){
+      if (triggerType == "buy" && stockQuote > triggerPrice) {
         continue;
       }
-      console.log("Triggering trigger!");
       const stockAmount = parseInt(trigger.dataValues.TriggerAmount);
 
-      if(triggerType === "buy"){
-
+      if (triggerType === "buy") {
         let newFunds;
-        await User.findAll({where: {UserName: user}}).then((data) => {
-          if(data.length == 0){
+        await User.findAll({ where: { UserName: user } }).then((data) => {
+          if (data.length == 0) {
+            //this shouldn't happen
             console.log("error: user does not exist");
+            return;
           }
           //newFunds are the same as the old funds because the User has already paid
           newFunds = parseInt(data[0].dataValues.Funds);
         });
+
+        await Trigger.destroy({
+          where: { UserID: user, StockSymbol: stockSymbol, TriggerType: "buy" },
+        }).then((status) => {
+          if (status) {
+            const systemEventBlock =
+              "<systemEvent>\n" +
+              `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+              `<server>local</server>\n` +
+              `<transactionNum>${transNum}</transactionNum>\n` +
+              `<command>EXECUTING_BUY_TRIGGER</command>\n` +
+              `<username>${user}</username>\n` +
+              `<stockSymbol>${stockSymbol}</stockSymbol>\n` +
+              "</systemEvent>\n";
+            dumpFile.write(systemEventBlock);
+            return true;
+          } else {
+            return false;
+          }
+        });
+
         const BuyObject = {
           user: user,
           stock: stockSymbol,
@@ -193,25 +220,45 @@ exports.checkTriggers = async (dumpFile, transNum) => {
           newFunds: newFunds,
         };
         await buy.commit_buy(user, BuyObject, dumpFile);
-  
-        await Trigger.destroy({ where: { UserID: user, StockSymbol: stockSymbol , TriggerType: "buy"} });
-      //sell
-      } else {
 
+        //sell
+      } else {
         let newAmount;
-        await OwnedStocks.findAll({where: {UserID: user, StockSymbol: stockSymbol}}).then((data) => {
-          if(data.length == 0){
+        const status = await OwnedStocks.findAll({
+          where: { UserID: user, StockSymbol: stockSymbol },
+        }).then(async (data) => {
+          if (data.length == 0) {
             //this shouldn't happen
             console.log("error: user does not have any of this stock");
-            return;
+            return false;
           }
           newAmount = parseInt(data[0].dataValues.StockAmount) - stockAmount;
-          if(newAmount < 0){
-            console.log("error: not enough stock left to complete this trigger, deleting trigger");
-            await Trigger.destroy({ where: { UserID: user, StockSymbol: stockSymbol, TriggerType: "sell"} });
-            return;
+          if (newAmount < 0) {
+            const errMsg = "Not enough stock to execute sell trigger";
+            console.log("error: " + errMsg);
+            var errorBlock =
+              "<errorEvent>\n" +
+              `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+              `<server>local</server>\n` +
+              `<transactionNum>${transNum}</transactionNum>\n` +
+              `<command>EXECUTE_SELL_TRIGGER</command>\n` +
+              `<username>${user}</username>\n` +
+              `<errorMessage>${errMsg}</errorMessage>\n` +
+              "</errorEvent>\n";
+            dumpFile.write(errorBlock);
+            await Trigger.destroy({
+              where: {
+                UserID: user,
+                StockSymbol: stockSymbol,
+                TriggerType: "sell",
+              },
+            });
+            return false;
           }
+          return true;
         });
+        if(!status) return;
+        
         const SellObject = {
           user: user,
           stock: stockSymbol,
@@ -219,13 +266,36 @@ exports.checkTriggers = async (dumpFile, transNum) => {
           stockQuote: stockQuote,
           newAmount: newAmount,
         };
-        await sell.commit_sell(user, SellObject, dumpFile);
 
-        await Trigger.destroy({ where: { UserID: user, StockSymbol: stockSymbol, TriggerType: "sell"} });
+        await Trigger.destroy({
+          where: {
+            UserID: user,
+            StockSymbol: stockSymbol,
+            TriggerType: "sell",
+          },
+        }).then((status) => {
+          if (status) {
+            const systemEventBlock =
+              "<systemEvent>\n" +
+              `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+              `<server>local</server>\n` +
+              `<transactionNum>${transNum}</transactionNum>\n` +
+              `<command>EXECUTING__SELL_TRIGGER</command>\n` +
+              `<username>${user}</username>\n` +
+              `<stockSymbol>${stockSymbol}</stockSymbol>\n` +
+              "</systemEvent>\n";
+            dumpFile.write(systemEventBlock);
+            return true;
+          } else {
+            return false;
+          }
+        });
+
+        await sell.commit_sell(user, SellObject, dumpFile);
       }
     }
   });
-}
+};
 
 exports.dumplog = (filename) => {
   // Purpose: Print out to the specified file the complete set of transactions that have occurred in the system.
