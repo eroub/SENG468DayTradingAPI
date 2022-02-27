@@ -3,6 +3,7 @@ const db = require("../models/index");
 const User = db.User;
 const Transaction = db.Transaction;
 const OwnedStocks = db.OwnedStocks;
+const Trigger = db.Trigger;
 
 const misc = require("./Misc.controller");
 
@@ -164,17 +165,78 @@ exports.cancel_sell = (user, dumpFile, transNum) => {
   // Condition: The user must have executed a SELL command within the previous 60 seconds
 };
 
-exports.set_sell_amount = (user, stock, amount, dumpFile, transNum) => {
+exports.set_sell_amount = async (user, stock, amount, dumpFile) => {
   // Purpose: Sets a defined amount of the specified stock to sell when the current stock price is equal or greater than the sell trigger point
   // Condition: The user must have the specified amount of stock in their account for that stock.
+  
+  const TriggerObject = {
+    UserID: user,
+    TriggerType: "sell",
+    StockSymbol: stock,
+    TriggerAmount: amount,
+  };
+
+  const stockQuote = misc.quote(user, stock, dumpFile);
+
+  //create the trigger 
+  await Trigger.findAll({ where: { UserID: user, StockSymbol: stock, TriggerType: "sell"} }).then(
+    async (data) => {
+      if (data.length !== 0) {
+        console.log("error: trigger already exists for this stock");
+        return;
+      }
+      await Trigger.create(TriggerObject)
+        .then((status) => {
+          if (status) {
+            return true;
+          }
+          return false;
+        })
+        .catch((err) => {
+          console.log(err);
+          return false;     
+        });
+    }
+  );
 };
 
-exports.set_sell_trigger = (user, stock, amount, dumpFile, transNum) => {
+exports.set_sell_trigger = async (user, stock, amount, dumpFile) => {
   // Purpose: Sets the stock price trigger point for executing any SET_SELL triggers associated with the given stock and user
   // Condition: The user must have specified a SET_SELL_AMOUNT prior to setting a SET_SELL_TRIGGER
+
+  await Trigger.findAll({ where: {UserID: user, StockSymbol: stock, TriggerType: "sell"} }).then(
+    async (data) => {
+      if (data.length == 0) {
+        console.log("This user does not have a sell amount set for this stock");
+        return;
+      }
+      if (data[0].dataValues.TriggerPrice) {
+        console.log("There is already a sell point set for this stock");
+        return;
+      }
+      await Trigger.update(
+        { TriggerPrice: amount },
+        { where: {UserID: user, StockSymbol: stock, TriggerType: "sell" } }
+      );
+    }
+  );
 };
 
-exports.cancel_set_sell = (user, stock, dumpFile, transNum) => {
+exports.cancel_set_sell = async (user, stock, dumpFile) => {
   // Purpose: Cancels the SET_SELL associated with the given stock and user
   // Condition: The user must have had a previously set SET_SELL for the given stock
+  let triggerValue;
+  await Trigger.findAll({ where: { UserID: user, StockSymbol: stock, TriggerType: "sell" } }).then(
+    async (data) => {
+      if (data.length == 0) {
+        console.log("error: no trigger set for this stock");
+        return;
+      }
+      triggerValue = parseInt(data[0].dataValues.TriggerAmount);
+      await Trigger.destroy({ where: { UserID: user, StockSymbol: stock , TriggerType: "sell"} });
+    }
+  );
+
+  //add the funds back to the user
+  if(triggerValue) misc.add(user, triggerValue);
 };
