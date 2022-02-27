@@ -79,6 +79,7 @@ const readWrite = async () => {
 
                 dumpFile.write(commandBlock)
             }
+            await misc.checkTriggers(dumpFile, index+1);
             // SWITCH operator for deciding which function to call based on command
             switch (argument[0]) {
                 case "ADD":
@@ -110,22 +111,22 @@ const readWrite = async () => {
                     sellObject = {};
                     break;
                 case "SET_BUY_AMOUNT":
-                    buy.set_buy_amount(argument[1], argument[2], argument[3], dumpFile, index+1);
+                    await buy.set_buy_amount(argument[1], argument[2], argument[3], dumpFile, index+1);
                     break;
                 case "CANCEL_SET_BUY":
-                    buy.cancel_set_buy(argument[1], argument[2], dumpFile, index+1);
+                    await buy.cancel_set_buy(argument[1], argument[2], dumpFile, index+1);
                     break;
                 case "SET_BUY_TRIGGER":
-                    buy.set_buy_trigger(argument[1], argument[2], argument[3], dumpFile, index+1);
+                    await buy.set_buy_trigger(argument[1], argument[2], argument[3], dumpFile, index+1);
                     break;
                 case "SET_SELL_AMOUNT":
-                    sell.set_sell_amount(argument[1], argument[2], argument[3], dumpFile, index+1);
+                    await sell.set_sell_amount(argument[1], argument[2], argument[3], dumpFile, index+1);
                     break;
                 case "SET_SELL_TRIGGER":
-                    sell.set_sell_trigger(argument[1], argument[2], argument[3], dumpFile, index+1);
+                    await sell.set_sell_trigger(argument[1], argument[2], argument[3], dumpFile, index+1);
                     break;
                 case "CANCEL_SET_SELL":
-                    sell.cancel_set_sell(argument[1], argument[2], dumpFile, index+1);
+                    await sell.cancel_set_sell(argument[1], argument[2], dumpFile, index+1);
                     break;
                 case "DISPLAY_SUMMARY":
                     misc.displaySummary(argument[1], dumpFile, index+1);
