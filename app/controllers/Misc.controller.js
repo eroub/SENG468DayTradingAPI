@@ -53,6 +53,10 @@ exports.add = async (userid, amount, dumpFile, transNum) => {
     } else {
       const newFunds =
         parseInt(userObj.Funds) + parseInt(data[0].dataValues.Funds);
+      //for cases of adding negative funds
+      if(newFunds < 0){
+        console.log("insufficient funds");
+      }
       await User.update(
         { Funds: newFunds },
         { where: { UserName: userObj.UserName }}

@@ -3,6 +3,7 @@ const db = require("../models/index");
 const User = db.User;
 const Transaction = db.Transaction;
 const OwnedStocks = db.OwnedStocks;
+const Trigger = db.Trigger;
 
 const misc = require("./Misc.controller");
 
@@ -82,7 +83,7 @@ exports.commit_buy = async (user, buyObject, dumpFile, transNum) => {
     StockSymbol: stock,
     StockAmount: buyAmount,
     StockAveragePrice: stockQuote,
-  }
+  };
 
   //subtract funds from the user
   await User.update({ Funds: newFunds }, { where: { UserName: user } }).then((status) => {
@@ -177,7 +178,7 @@ exports.commit_buy = async (user, buyObject, dumpFile, transNum) => {
   });
 };
 
-exports.cancel_buy = (user) => {
+exports.cancel_buy = async (user) => {
   // Purpose: Cancels the most recently executed BUY Command
   // Conditions: The user must have executed a BUY command within the previous 60 seconds
 };
@@ -185,14 +186,78 @@ exports.cancel_buy = (user) => {
 exports.set_buy_amount = (user, stock, amount, dumpFile, transNum) => {
   // Purpose: Sets a defined amount of the given stock to buy when the current stock price is less than or equal to the BUY_TRIGGER
   // Conditions: The user's cash account must be greater than or equal to the BUY amount at the time the transaction occurs
+
+  const TriggerObject = {
+    UserID: user,
+    TriggerType: "buy",
+    StockSymbol: stock,
+    TriggerAmount: amount,
+  };
+
+  //reserve funds for user
+  console.log(amount * -1);
+  await misc.add(user, amount * -1);
+
+  //create the trigger
+  await Trigger.findAll({ where: { UserID: user, StockSymbol: stock } }).then(
+    async (data) => {
+      if (data.length !== 0) {
+        console.log("error: trigger already exists for this stock");
+        return;
+      }
+      await Trigger.create(TriggerObject)
+        .then((status) => {
+          if (status) {
+            return true;
+          }
+          return false;
+        })
+        .catch((err) => {
+          console.log(err);
+          return false;
+        });
+    }
+  );
 };
 
 exports.cancel_set_buy = (user, stock, dumpFile, transNum) => {
   // Purpose: Cancels a SET_BUY command issued for the given stock
   // Conditions: The must have been a SET_BUY Command issued for the given stock by the user
+
+  let triggerValue;
+  await Trigger.findAll({ where: { UserID: user, StockSymbol: stock } }).then(
+    async (data) => {
+      if (data.length == 0) {
+        console.log("error: no trigger set for this stock");
+        return;
+      }
+      triggerValue = parseInt(data[0].dataValues.TriggerAmount);
+      await Trigger.destroy({ where: { UserID: user, StockSymbol: stock } });
+    }
+  );
+
+  //add the funds back to the user
+  if(triggerValue) misc.add(user, triggerValue);
 };
 
 exports.set_buy_trigger = (user, stock, amount, dumpFile, transNum) => {
   // Purpose: Sets the trigger point base on the current stock price when any SET_BUY will execute.
   // Conditions: The user must have specified a SET_BUY_AMOUNT prior to setting a SET_BUY_TRIGGER
+
+  await Trigger.findAll({ where: { UserID: user, StockSymbol: stock } }).then(
+    async (data) => {
+      if (data.length == 0) {
+        console.log("This user does not have a buy amount set for this stock");
+        return;
+      }
+      if (data[0].dataValues.TriggerPrice) {
+        console.log("There is already a buy point set for this stock");
+        return;
+      }
+      await Trigger.update(
+        { TriggerPrice: amount },
+        { where: { UserID: user, StockSymbol: stock } }
+      );
+    }
+  );
 };
