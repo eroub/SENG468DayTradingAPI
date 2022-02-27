@@ -133,25 +133,49 @@ exports.set_buy_amount = async (user, stock, amount, dumpFile) => {
   };
 
   //reserve funds for user
+  console.log(amount * -1);
   await misc.add(user, amount * -1);
 
   //create the trigger
-  await Trigger.create(TriggerObject)
-    .then((status) => {
-      if (status) {
-        return true;
+  await Trigger.findAll({ where: { UserID: user, StockSymbol: stock } }).then(
+    async (data) => {
+      if (data.length !== 0) {
+        console.log("error: trigger already exists for this stock");
+        return;
       }
-      return false;
-    })
-    .catch((err) => {
-      console.log(err);
-      return false;
-    });
+      await Trigger.create(TriggerObject)
+        .then((status) => {
+          if (status) {
+            return true;
+          }
+          return false;
+        })
+        .catch((err) => {
+          console.log(err);
+          return false;
+        });
+    }
+  );
 };
 
 exports.cancel_set_buy = async (user, stock, dumpFile) => {
   // Purpose: Cancels a SET_BUY command issued for the given stock
   // Conditions: The must have been a SET_BUY Command issued for the given stock by the user
+
+  let triggerValue;
+  await Trigger.findAll({ where: { UserID: user, StockSymbol: stock } }).then(
+    async (data) => {
+      if (data.length == 0) {
+        console.log("error: no trigger set for this stock");
+        return;
+      }
+      triggerValue = parseInt(data[0].dataValues.TriggerAmount);
+      await Trigger.destroy({ where: { UserID: user, StockSymbol: stock } });
+    }
+  );
+
+  //add the funds back to the user
+  if(triggerValue) misc.add(user, triggerValue);
 };
 
 exports.set_buy_trigger = async (user, stock, amount, dumpFile) => {
@@ -162,6 +186,10 @@ exports.set_buy_trigger = async (user, stock, amount, dumpFile) => {
     async (data) => {
       if (data.length == 0) {
         console.log("This user does not have a buy amount set for this stock");
+        return;
+      }
+      if (data[0].dataValues.TriggerPrice) {
+        console.log("There is already a buy point set for this stock");
         return;
       }
       await Trigger.update(
