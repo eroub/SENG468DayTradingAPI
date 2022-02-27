@@ -207,6 +207,11 @@ exports.checkTriggers = async (dumpFile, transNum) => {
             return;
           }
           newAmount = parseInt(data[0].dataValues.StockAmount) - stockAmount;
+          if(newAmount < 0){
+            console.log("error: not enough stock left to complete this trigger, deleting trigger");
+            await Trigger.destroy({ where: { UserID: user, StockSymbol: stockSymbol, TriggerType: "sell"} });
+            return;
+          }
         });
         const SellObject = {
           user: user,
