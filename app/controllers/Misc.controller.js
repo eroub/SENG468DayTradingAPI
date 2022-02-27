@@ -1,9 +1,12 @@
 // This file contains the methods for the commands that are neither buys or sells
 const { generateKeyPair } = require('crypto');
 const db = require("../models/index");
+const buy = require("./Buy.controller");
+const sell  = require("./Sell.controller");
 const User = db.User;
 const Transaction = db.Transaction;
 const OwnedStocks = db.OwnedStocks;
+const Trigger = db.Trigger;
 
 exports.add = async (userid, amount, dumpFile, transNum) => {
   // Purpose: Add the given amount of money to the users' account
@@ -150,6 +153,75 @@ exports.quote = (userid, stock, dumpFile, transNum) => {
 
   return stockPrice;
 };
+
+exports.checkTriggers = async (dumpFile, transNum) => {
+  await Trigger.findAll().then(async (data) => {
+    for(const trigger of data){
+      const triggerPrice = parseInt(trigger.dataValues?.TriggerPrice);
+      if(!triggerPrice){
+        continue;
+      }
+      const user = trigger.dataValues.UserID;
+      const stockSymbol = trigger.dataValues.StockSymbol;
+      const stockQuote = this.quote(user, stockSymbol, dumpFile, transNum);
+      const triggerType = trigger.dataValues.TriggerType;
+
+      console.log("Trigger Price is: " + triggerPrice + " Stock Quote is: " + stockQuote);
+      if(triggerType == "sell" && stockQuote < triggerPrice){
+        continue;
+      }
+      if(triggerType == "buy" && stockQuote > triggerPrice){
+        continue;
+      }
+      console.log("Triggering trigger!");
+      const stockAmount = parseInt(trigger.dataValues.TriggerAmount);
+
+      if(triggerType === "buy"){
+
+        let newFunds;
+        await User.findAll({where: {UserName: user}}).then((data) => {
+          if(data.length == 0){
+            console.log("error: user does not exist");
+          }
+          //newFunds are the same as the old funds because the User has already paid
+          newFunds = parseInt(data[0].dataValues.Funds);
+        });
+        const BuyObject = {
+          user: user,
+          stock: stockSymbol,
+          buyAmount: stockAmount,
+          stockQuote: stockQuote,
+          newFunds: newFunds,
+        };
+        await buy.commit_buy(user, BuyObject, dumpFile);
+  
+        await Trigger.destroy({ where: { UserID: user, StockSymbol: stockSymbol , TriggerType: "buy"} });
+      //sell
+      } else {
+
+        let newAmount;
+        await OwnedStocks.findAll({where: {UserID: user, StockSymbol: stockSymbol}}).then((data) => {
+          if(data.length == 0){
+            //this shouldn't happen
+            console.log("error: user does not have any of this stock");
+            return;
+          }
+          newAmount = parseInt(data[0].dataValues.StockAmount) - stockAmount;
+        });
+        const SellObject = {
+          user: user,
+          stock: stockSymbol,
+          sellAmount: stockAmount,
+          stockQuote: stockQuote,
+          newAmount: newAmount,
+        };
+        await sell.commit_sell(user, SellObject, dumpFile);
+
+        await Trigger.destroy({ where: { UserID: user, StockSymbol: stockSymbol, TriggerType: "sell"} });
+      }
+    }
+  });
+}
 
 exports.dumplog = (filename) => {
   // Purpose: Print out to the specified file the complete set of transactions that have occurred in the system.
