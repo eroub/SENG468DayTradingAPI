@@ -240,7 +240,7 @@ exports.cancel_buy = async (user, buyObject, dumpFile, transNum) => {
   // Purpose: Cancels the most recently executed BUY Command
   // Conditions: The user must have executed a BUY command within the previous 60 seconds
 
-  if (buyObject.length == 0) {
+  if (!buyObject?.length || buyObject?.length == 0) {
     const errMsg = "No buy to be canceled";
     console.log("error: " + errMsg);
     var errorBlock =

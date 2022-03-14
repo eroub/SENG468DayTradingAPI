@@ -220,7 +220,7 @@ exports.checkTriggers = async (dumpFile, transNum) => {
           stockQuote: stockQuote,
           newFunds: newFunds,
         };
-        await buy.commit_buy(user, BuyObject, dumpFile);
+        await buy.commit_buy(user, BuyObject, dumpFile, transNum);
 
         //sell
       } else {
@@ -294,7 +294,7 @@ exports.checkTriggers = async (dumpFile, transNum) => {
           }
         });
 
-        await sell.commit_sell(user, SellObject, dumpFile);
+        await sell.commit_sell(user, SellObject, dumpFile, transNum);
       }
     }
   });

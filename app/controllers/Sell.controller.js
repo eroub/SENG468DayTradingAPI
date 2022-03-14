@@ -186,7 +186,7 @@ exports.commit_sell = async (user, sellObject, dumpFile, transNum) => {
 exports.cancel_sell = async (user, sellObject, dumpFile, transNum) => {
   // Purpose: Cancels the most recently executed SELL Command
   // Condition: The user must have executed a SELL command within the previous 60 seconds
-  if (sellObject.length == 0) {
+  if (!sellObject?.length || sellObject?.length == 0) {
     const errMsg = "No sell to be canceled";
     console.log("error: " + errMsg);
     var errorBlock =
