@@ -74,7 +74,20 @@ exports.sell = async (user, stock, amount, dumpFile, transNum) => {
     newAmount = oldAmount - sellAmount;
     return true;
   });
-  if(!status) return;
+  if (!status) return;
+
+  //if the above doesn't fail then log the command
+  const systemEventBlock =
+    "<systemEvent>\n" +
+    `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+    `<server>local</server>\n` +
+    `<transactionNum>${transNum}</transactionNum>\n` +
+    `<command>SELL</command>\n` +
+    `<username>${user}</username>\n` +
+    `<stockSymbol>${stock}</stockSymbol>\n` +
+    `<funds>${amount}</funds>\n` +
+    "</systemEvent>\n";
+  dumpFile.write(systemEventBlock);
 
   const SellObject = {
     user: user,
@@ -170,9 +183,33 @@ exports.commit_sell = async (user, sellObject, dumpFile, transNum) => {
     });
 };
 
-exports.cancel_sell = (user, dumpFile, transNum) => {
+exports.cancel_sell = async (user, sellObject, dumpFile, transNum) => {
   // Purpose: Cancels the most recently executed SELL Command
   // Condition: The user must have executed a SELL command within the previous 60 seconds
+  if (sellObject.length == 0) {
+    const errMsg = "No sell to be canceled";
+    console.log("error: " + errMsg);
+    var errorBlock =
+      "<errorEvent>\n" +
+      `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+      `<server>local</server>\n` +
+      `<transactionNum>${transNum}</transactionNum>\n` +
+      `<command>CANCEL_SELL</command>\n` +
+      `<username>${user}</username>\n` +
+      `<errorMessage>${errMsg}</errorMessage>\n` +
+      "</errorEvent>\n";
+    dumpFile.write(errorBlock);
+    return;
+  }
+  const systemEventBlock =
+    "<systemEvent>\n" +
+    `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+    `<server>local</server>\n` +
+    `<transactionNum>${transNum}</transactionNum>\n` +
+    `<command>CANCEL_SELL</command>\n` +
+    `<username>${user}</username>\n` +
+    "</systemEvent>\n";
+  dumpFile.write(systemEventBlock);
 };
 
 exports.set_sell_amount = async (user, stock, amount, dumpFile, transNum) => {
@@ -191,7 +228,7 @@ exports.set_sell_amount = async (user, stock, amount, dumpFile, transNum) => {
   }).then((data) => {
     if (data.length == 0) {
       const errMsg =
-      "Account " + user + " does not exist or does not own the stock";
+        "Account " + user + " does not exist or does not own the stock";
       console.log("error: " + errMsg);
       var errorBlock =
         "<errorEvent>\n" +
@@ -227,8 +264,8 @@ exports.set_sell_amount = async (user, stock, amount, dumpFile, transNum) => {
     }
     return true;
   });
-  if(!status) return;
-  
+  if (!status) return;
+
   //create the trigger
   await Trigger.findAll({
     where: { UserID: user, StockSymbol: stock, TriggerType: "sell" },
@@ -254,14 +291,14 @@ exports.set_sell_amount = async (user, stock, amount, dumpFile, transNum) => {
       .then((status) => {
         if (status) {
           const systemEventBlock =
-          "<systemEvent>\n" +
-          `<timestamp>${new Date().valueOf()}</timestamp>\n` +
-          `<server>local</server>\n` +
-          `<transactionNum>${transNum}</transactionNum>\n` +
-          `<command>SET_SELL_AMOUNT</command>\n` +
-          `<username>${user}</username>\n` +
-          `<stockSymbol>${stock}</stockSymbol>\n` +
-          "</systemEvent>\n";
+            "<systemEvent>\n" +
+            `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+            `<server>local</server>\n` +
+            `<transactionNum>${transNum}</transactionNum>\n` +
+            `<command>SET_SELL_AMOUNT</command>\n` +
+            `<username>${user}</username>\n` +
+            `<stockSymbol>${stock}</stockSymbol>\n` +
+            "</systemEvent>\n";
           dumpFile.write(systemEventBlock);
           return true;
         }
@@ -363,17 +400,17 @@ exports.cancel_set_sell = async (user, stock, dumpFile, transNum) => {
     await Trigger.destroy({
       where: { UserID: user, StockSymbol: stock, TriggerType: "sell" },
     }).then((status) => {
-      if(status) {
+      if (status) {
         const systemEventBlock =
-        "<systemEvent>\n" +
-        `<timestamp>${new Date().valueOf()}</timestamp>\n` +
-        `<server>local</server>\n` +
-        `<transactionNum>${transNum}</transactionNum>\n` +
-        `<command>CANCEL_SET_SELL</command>\n` +
-        `<username>${user}</username>\n` +
-        `<stockSymbol>${stock}</stockSymbol>\n` +
-        "</systemEvent>\n";
-       dumpFile.write(systemEventBlock);
+          "<systemEvent>\n" +
+          `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+          `<server>local</server>\n` +
+          `<transactionNum>${transNum}</transactionNum>\n` +
+          `<command>CANCEL_SET_SELL</command>\n` +
+          `<username>${user}</username>\n` +
+          `<stockSymbol>${stock}</stockSymbol>\n` +
+          "</systemEvent>\n";
+        dumpFile.write(systemEventBlock);
         return true;
       }
       return false;

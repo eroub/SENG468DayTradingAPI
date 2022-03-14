@@ -96,7 +96,7 @@ const readWrite = async () => {
                     buyObject = {};
                     break;
                 case "CANCEL_BUY":
-                    //buy.cancel_buy(argument[1]);
+                    await buy.cancel_buy(argument[1], buyObject, dumpFile, index+1);
                     buyObject = {};
                     break;
                 case "SELL":
@@ -107,7 +107,7 @@ const readWrite = async () => {
                     sellObject = {};
                     break;
                 case "CANCEL_SELL":
-                    //sell.cancel_sell(argument[1]);
+                    await sell.cancel_sell(argument[1], sellObject, dumpFile, index+1);
                     sellObject = {};
                     break;
                 case "SET_BUY_AMOUNT":

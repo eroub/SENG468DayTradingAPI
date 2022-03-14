@@ -201,9 +201,10 @@ exports.checkTriggers = async (dumpFile, transNum) => {
               `<timestamp>${new Date().valueOf()}</timestamp>\n` +
               `<server>local</server>\n` +
               `<transactionNum>${transNum}</transactionNum>\n` +
-              `<command>EXECUTING_BUY_TRIGGER</command>\n` +
+              `<command>BUY</command>\n` +
               `<username>${user}</username>\n` +
               `<stockSymbol>${stockSymbol}</stockSymbol>\n` +
+              `<funds>${stockQuote * stockAmount}</funds>\n` +
               "</systemEvent>\n";
             dumpFile.write(systemEventBlock);
             return true;
@@ -241,8 +242,9 @@ exports.checkTriggers = async (dumpFile, transNum) => {
               `<timestamp>${new Date().valueOf()}</timestamp>\n` +
               `<server>local</server>\n` +
               `<transactionNum>${transNum}</transactionNum>\n` +
-              `<command>EXECUTE_SELL_TRIGGER</command>\n` +
+              `<command>SELL</command>\n` +
               `<username>${user}</username>\n` +
+              `<stockSymbol>${stockSymbol}</stockSymbol>\n` +
               `<errorMessage>${errMsg}</errorMessage>\n` +
               "</errorEvent>\n";
             dumpFile.write(errorBlock);
@@ -257,8 +259,8 @@ exports.checkTriggers = async (dumpFile, transNum) => {
           }
           return true;
         });
-        if(!status) return;
-        
+        if (!status) return;
+
         const SellObject = {
           user: user,
           stock: stockSymbol,
@@ -280,9 +282,10 @@ exports.checkTriggers = async (dumpFile, transNum) => {
               `<timestamp>${new Date().valueOf()}</timestamp>\n` +
               `<server>local</server>\n` +
               `<transactionNum>${transNum}</transactionNum>\n` +
-              `<command>EXECUTING__SELL_TRIGGER</command>\n` +
+              `<command>SELL</command>\n` +
               `<username>${user}</username>\n` +
               `<stockSymbol>${stockSymbol}</stockSymbol>\n` +
+              `<funds>${stockQuote * stockAmount}</funds>\n` +
               "</systemEvent>\n";
             dumpFile.write(systemEventBlock);
             return true;

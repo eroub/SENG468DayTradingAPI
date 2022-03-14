@@ -78,6 +78,19 @@ exports.buy = async (user, stock, amount, dumpFile, transNum) => {
   );
   if (!status) return;
 
+  //if the above doesn't fail then log the command
+  const systemEventBlock =
+    "<systemEvent>\n" +
+    `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+    `<server>local</server>\n` +
+    `<transactionNum>${transNum}</transactionNum>\n` +
+    `<command>BUY</command>\n` +
+    `<username>${user}</username>\n` +
+    `<stockSymbol>${stock}</stockSymbol>\n` +
+    `<funds>${amount}</funds>\n` +
+    "</systemEvent>\n";
+  dumpFile.write(systemEventBlock);
+
   const BuyObject = {
     user: user,
     stock: stock,
@@ -223,9 +236,34 @@ exports.commit_buy = async (user, buyObject, dumpFile, transNum) => {
   });
 };
 
-exports.cancel_buy = async (user) => {
+exports.cancel_buy = async (user, buyObject, dumpFile, transNum) => {
   // Purpose: Cancels the most recently executed BUY Command
   // Conditions: The user must have executed a BUY command within the previous 60 seconds
+
+  if (buyObject.length == 0) {
+    const errMsg = "No buy to be canceled";
+    console.log("error: " + errMsg);
+    var errorBlock =
+      "<errorEvent>\n" +
+      `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+      `<server>local</server>\n` +
+      `<transactionNum>${transNum}</transactionNum>\n` +
+      `<command>CANCEL_BUY</command>\n` +
+      `<username>${user}</username>\n` +
+      `<errorMessage>${errMsg}</errorMessage>\n` +
+      "</errorEvent>\n";
+    dumpFile.write(errorBlock);
+    return;
+  }
+  const systemEventBlock =
+    "<systemEvent>\n" +
+    `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+    `<server>local</server>\n` +
+    `<transactionNum>${transNum}</transactionNum>\n` +
+    `<command>CANCEL_BUY</command>\n` +
+    `<username>${user}</username>\n` +
+    "</systemEvent>\n";
+  dumpFile.write(systemEventBlock);
 };
 
 exports.set_buy_amount = async (user, stock, amount, dumpFile, transNum) => {
