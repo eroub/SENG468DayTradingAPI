@@ -18,6 +18,7 @@
 	},
 	"homepage": "https://github.com/eroub/SENG468DayTradingAPI#readme",
 	"devDependencies": {
+		"@types/sequelize": "^4.28.11",
 		"cors": "^2.8.5",
 		"eslint": "^8.9.0",
 		"express": "^4.17.2",

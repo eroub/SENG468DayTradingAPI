@@ -1,4 +1,5 @@
 // This file contains the methods for the commands that are neither buys or sells
+const sequelize = require("sequelize");
 const db = require("../models/index");
 const buy = require("./Buy.controller");
 const sell = require("./Sell.controller");
@@ -159,7 +160,7 @@ exports.quote = (userid, stock, dumpFile, transNum) => {
 };
 
 exports.checkTriggers = async (user, dumpFile, transNum) => {
-  await Trigger.findAll({where: { UserID: user}}).then(async (data) => {
+  await Trigger.findAll({where: { UserID: user, TriggerPrice: {[sequelize.Op.ne]: null}}}).then(async (data) => {
     for (const trigger of data) {
       const triggerPrice = parseInt(trigger.dataValues?.TriggerPrice);
       if (!triggerPrice) {
