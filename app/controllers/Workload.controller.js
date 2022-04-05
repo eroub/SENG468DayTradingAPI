@@ -79,54 +79,95 @@ const readWrite = async () => {
 
                 dumpFile.write(commandBlock)
             }
-            await misc.checkTriggers(dumpFile, index+1);
             // SWITCH operator for deciding which function to call based on command
             switch (argument[0]) {
                 case "ADD":
                     await misc.add(argument[1], argument[2], dumpFile, index+1);
+                    if(!(argument[1] in buyObject)){
+                        buyObject[argument[1]] = {};
+                    }
+                    if(!(argument[1] in sellObject)){
+                        sellObject[argument[1]] = {};
+                    }
                     break;
                 case "QUOTE":
                     misc.quote(argument[1], argument[2], dumpFile, index+1);
                     break;
                 case "BUY":
-                    buyObject = await buy.buy(argument[1], argument[2], argument[3], dumpFile, index+1);
+                    const newBuyObject = await buy.buy(argument[1], argument[2], argument[3], dumpFile, index+1);
+                    if(argument[1] in buyObject){
+                        buyObject[argument[1]] = newBuyObject;
+                    }
                     break;
                 case "COMMIT_BUY":
-                    await buy.commit_buy(argument[1], buyObject, dumpFile, index+1);
-                    buyObject = {};
+                    let buyToCommit = {};
+                    if(argument[1] in buyObject){
+                        buyToCommit = buyObject[argument[1]];
+                    }
+                    await buy.commit_buy(argument[1], buyToCommit, dumpFile, index+1);
+                    if(argument[1] in buyObject){
+                        buyObject[argument[1]] = {};
+                    }
                     break;
                 case "CANCEL_BUY":
-                    await buy.cancel_buy(argument[1], buyObject, dumpFile, index+1);
-                    buyObject = {};
+                    let buyToCancel = {};
+                    if(argument[1] in buyObject){
+                        buyToCancel = buyObject[argument[1]];
+                    }
+                    await buy.cancel_buy(argument[1], buyToCancel, dumpFile, index+1);
+                    if(argument[1] in buyObject){
+                        buyObject[argument[1]] = {};
+                    }
                     break;
                 case "SELL":
-                    sellObject = await sell.sell(argument[1], argument[2], argument[3], dumpFile, index+1);
+                    const newSellObject = await sell.sell(argument[1], argument[2], argument[3], dumpFile, index+1);
+                    if(argument[1] in sellObject){
+                        sellObject[argument[1]] = newSellObject;
+                    }
                     break;
                 case "COMMIT_SELL":
-                    await sell.commit_sell(argument[1], sellObject, dumpFile, index+1);
-                    sellObject = {};
+                    let sellToCommit = {};
+                    if(argument[1] in sellObject){
+                        sellToCommit = sellObject[argument[1]];
+                    }
+                    await sell.commit_sell(argument[1], sellToCommit, dumpFile, index+1);
+                    if(argument[1] in sellObject){
+                        sellObject[argument[1]] = {};
+                    }
                     break;
                 case "CANCEL_SELL":
-                    await sell.cancel_sell(argument[1], sellObject, dumpFile, index+1);
-                    sellObject = {};
+                    let sellToCancel = {};
+                    if(argument[1] in sellObject){
+                        sellToCancel = sellObject[argument[1]];
+                    }
+                    await sell.cancel_sell(argument[1], sellToCancel, dumpFile, index+1);
+                    if(argument[1] in sellObject){
+                        sellObject[argument[1]] = {};
+                    }
                     break;
                 case "SET_BUY_AMOUNT":
                     await buy.set_buy_amount(argument[1], argument[2], argument[3], dumpFile, index+1);
+                    await misc.checkTriggers(argument[1], dumpFile, index+1);
                     break;
                 case "CANCEL_SET_BUY":
                     await buy.cancel_set_buy(argument[1], argument[2], dumpFile, index+1);
+                    await misc.checkTriggers(argument[1], dumpFile, index+1);
                     break;
                 case "SET_BUY_TRIGGER":
                     await buy.set_buy_trigger(argument[1], argument[2], argument[3], dumpFile, index+1);
+                    await misc.checkTriggers(argument[1], dumpFile, index+1);
                     break;
                 case "SET_SELL_AMOUNT":
                     await sell.set_sell_amount(argument[1], argument[2], argument[3], dumpFile, index+1);
+                    await misc.checkTriggers(argument[1], dumpFile, index+1);
                     break;
                 case "SET_SELL_TRIGGER":
                     await sell.set_sell_trigger(argument[1], argument[2], argument[3], dumpFile, index+1);
+                    await misc.checkTriggers(argument[1], dumpFile, index+1);
                     break;
                 case "CANCEL_SET_SELL":
                     await sell.cancel_set_sell(argument[1], argument[2], dumpFile, index+1);
+                    await misc.checkTriggers(argument[1], dumpFile, index+1);
                     break;
                 case "DISPLAY_SUMMARY":
                     misc.displaySummary(argument[1], dumpFile, index+1);

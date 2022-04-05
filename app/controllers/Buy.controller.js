@@ -36,7 +36,7 @@ exports.buy = async (user, stock, amount, dumpFile, transNum) => {
     async (data) => {
       if (data.length == 0) {
         const errMsg =
-          "Account " + user + " does not exist or does not own the stock";
+          "Account " + user + " does not exist";
         console.log("error: " + errMsg);
         var errorBlock =
           "<errorEvent>\n" +
@@ -319,16 +319,12 @@ exports.set_buy_amount = async (user, stock, amount, dumpFile, transNum) => {
         console.log(err);
         return false;
       });
-    //reserve funds for user
-    await misc.add(user, amount * -1, dumpFile, transNum);
   });
 };
 
 exports.cancel_set_buy = async (user, stock, dumpFile, transNum) => {
   // Purpose: Cancels a SET_BUY command issued for the given stock
   // Conditions: The must have been a SET_BUY Command issued for the given stock by the user
-
-  let triggerValue;
   await Trigger.findAll({
     where: { UserID: user, StockSymbol: stock, TriggerType: "buy" },
   }).then(async (data) => {
@@ -347,7 +343,6 @@ exports.cancel_set_buy = async (user, stock, dumpFile, transNum) => {
       dumpFile.write(errorBlock);
       return;
     }
-    triggerValue = parseInt(data[0].dataValues.TriggerAmount);
     await Trigger.destroy({
       where: { UserID: user, StockSymbol: stock, TriggerType: "buy" },
     }).then((status) => {
@@ -367,8 +362,6 @@ exports.cancel_set_buy = async (user, stock, dumpFile, transNum) => {
         return false;
       }
     });
-    //add the funds back to the user
-    if (triggerValue) misc.add(user, triggerValue, dumpFile, transNum);
   });
 };
 

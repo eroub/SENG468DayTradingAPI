@@ -223,9 +223,10 @@ exports.set_sell_amount = async (user, stock, amount, dumpFile, transNum) => {
     TriggerAmount: amount,
   };
 
-  const status = await OwnedStocks.findAll({
+  let status;
+  await OwnedStocks.findAll({
     where: { UserID: user, StockSymbol: stock },
-  }).then((data) => {
+  }).then(async (data) => {
     if (data.length == 0) {
       const errMsg =
         "Account " + user + " does not exist or does not own the stock";
@@ -242,7 +243,8 @@ exports.set_sell_amount = async (user, stock, amount, dumpFile, transNum) => {
         `<errorMessage>${errMsg}</errorMessage>\n` +
         "</errorEvent>\n";
       dumpFile.write(errorBlock);
-      return false;
+      status = false;
+      return;
     }
     const stockAmount = parseInt(data[0].dataValues.StockAmount);
     if (stockAmount < amount) {
@@ -260,9 +262,10 @@ exports.set_sell_amount = async (user, stock, amount, dumpFile, transNum) => {
         `<errorMessage>${errMsg}</errorMessage>\n` +
         "</errorEvent>\n";
       dumpFile.write(errorBlock);
-      return false;
+      status = false;
+      return;
     }
-    return true;
+    status = true;
   });
   if (!status) return;
 

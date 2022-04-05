@@ -106,19 +106,17 @@ exports.quote = (userid, stock, dumpFile, transNum) => {
 
   //a stock symbols base price is the sum of its ascii values
   //the lowest base (AAA) is 195, the highest base (ZZZ) is (270). Scale it to make it more appropriate.
-  const basePrice = stockNumber / 3;
+  const basePrice = stockNumber/6;
 
   const date = new Date();
   const time = date.getTime();
   const timeMod = time % 10;
 
-  //pick a random number between 11 and 20
-  const rand = Math.floor(Math.random() * (20 - 11 + 1)) + 11;
+  //pick a random number between 11 and 15
+  const rand = Math.floor(Math.random() * (15 - 11 + 1)) + 11;
 
-  let spikeMag = rand;
   //convert from two digit to one (ie. from 11 to 1.1)
-  spikeMag /= Math.pow(10, 1);
-  //spike magnitude is a random number between 1.1 and 2.0
+  let spikeMag = rand/10;
 
   let stockPrice = basePrice;
   //decrease the base price by the spike magnitude if the time ends in 0-4
@@ -160,8 +158,8 @@ exports.quote = (userid, stock, dumpFile, transNum) => {
   return stockPrice;
 };
 
-exports.checkTriggers = async (dumpFile, transNum) => {
-  await Trigger.findAll().then(async (data) => {
+exports.checkTriggers = async (user, dumpFile, transNum) => {
+  await Trigger.findAll({where: { UserID: user}}).then(async (data) => {
     for (const trigger of data) {
       const triggerPrice = parseInt(trigger.dataValues?.TriggerPrice);
       if (!triggerPrice) {
@@ -188,8 +186,26 @@ exports.checkTriggers = async (dumpFile, transNum) => {
             console.log("error: user does not exist");
             return;
           }
-          //newFunds are the same as the old funds because the User has already paid
-          newFunds = parseInt(data[0].dataValues.Funds);
+          newFunds = parseInt(data[0].dataValues.Funds - stockAmount*stockQuote);
+          if(newFunds < 0){
+            if (newFunds < 0) {
+              const errMsg = "Account " + user + " has insufficient funds";
+              console.log("error: " + errMsg);
+              var errorBlock =
+                "<errorEvent>\n" +
+                `<timestamp>${new Date().valueOf()}</timestamp>\n` +
+                `<server>local</server>\n` +
+                `<transactionNum>${transNum}</transactionNum>\n` +
+                `<command>BUY</command>\n` +
+                `<username>${user}</username>\n` +
+                `<stockSymbol>${stock}</stockSymbol>\n` +
+                `<funds>${amount}</funds>\n` +
+                `<errorMessage>${errMsg}</errorMessage>\n` +
+                "</errorEvent>\n";
+              dumpFile.write(errorBlock);
+              return false;
+            }
+          }
         });
 
         await Trigger.destroy({
