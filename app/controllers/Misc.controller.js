@@ -201,8 +201,8 @@ exports.checkTriggers = async (user, dumpFile, transNum) => {
                 `<transactionNum>${transNum}</transactionNum>\n` +
                 `<command>BUY</command>\n` +
                 `<username>${user}</username>\n` +
-                `<stockSymbol>${stock}</stockSymbol>\n` +
-                `<funds>${amount}</funds>\n` +
+                `<stockSymbol>${stockQuote}</stockSymbol>\n` +
+                `<funds>${data[0].dataValues.Funds}}</funds>\n` +
                 `<errorMessage>${errMsg}</errorMessage>\n` +
                 "</errorEvent>\n";
               dumpFile.write(errorBlock);
