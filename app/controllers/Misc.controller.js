@@ -1,4 +1,6 @@
 // This file contains the methods for the commands that are neither buys or sells
+const fs = require('fs');
+const path = require('path');
 const sequelize = require("sequelize");
 const db = require("../models/index");
 const buy = require("./Buy.controller");
@@ -317,17 +319,46 @@ exports.checkTriggers = async (user, dumpFile, transNum) => {
   });
 };
 
-exports.dumplog = (filename) => {
+exports.dumplog = async (filename) => {
   // Purpose: Print out to the specified file the complete set of transactions that have occurred in the system.
+  const fixedFilename = filename.slice(2);
+  const fd = fs.openSync("./InputOutput/" + fixedFilename, "w");
+ 
+  const outputFile = fs.createWriteStream(path.resolve(__dirname, "../../InputOutput/" + fixedFilename), { flags: 'a' });
+  const transactions = await Transaction.findAll();
+
+  transactions.forEach((transaction) => {
+    const data = transaction.dataValues;
+    const dump = `${data.TransactionType} Transaction: ${data.StockSymbol} Price: ${data.StockQuote} Amount: ${data.StockAmount} \n`;
+    outputFile.write(dump);
+  });
+
+  fs.close(fd, (err) => {
+    if(err) console.log("File close errored", err);
+  });
 };
 
 exports.displaySummary = (userid, dumpFile, transNum) => {
   // Purpose: Provides a summary to the client of the given user's transaction history and the current status of their accounts as well as any set buy or sell triggers and their parameters
 };
 
-// NOT NEEDED FOR FIRST DELIVERABLE
-exports.dumplogUserSpecific = (userid, filename, dumpFile, transNum) => {
+exports.dumplogUserSpecific = async (userid, filename, dumpFile, transNum) => {
   // Purpose: Print out the history of the users transactions to the user specified file
+  const fixedFilename = filename.slice(2);
+  const fd = fs.openSync("./InputOutput/" + fixedFilename, "w");
+  
+  const outputFile = fs.createWriteStream(path.resolve(__dirname, "../../InputOutput/" + fixedFilename), { flags: 'a' });
+  const transactions = await Transaction.findAll({where: { UserID: userid }});
+
+  transactions.forEach((transaction) => {
+    const data = transaction.dataValues;
+    const dump = `${data.TransactionType} Transaction: ${data.StockSymbol} Price: ${data.StockQuote} Amount: ${data.StockAmount} \n`;
+    outputFile.write(dump)
+  });
+
+  fs.close(fd, (err) => {
+    if(err) console.log("File close errored", err);
+  });
 };
 
 // This function deletes all entries across all models

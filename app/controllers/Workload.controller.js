@@ -173,10 +173,10 @@ const readWrite = async () => {
                     misc.displaySummary(argument[1], dumpFile, index+1);
                     break;
                 case "DUMPLOG":
-                    if(argument.length = 3) {
-                        misc.dumplogUserSpecific(argument[1], argument[2], dumpFile, index+1);
+                    if(argument.length == 3) {
+                        await misc.dumplogUserSpecific(argument[1], argument[2], dumpFile, index+1);
                     } else {
-                        misc.dumplog(argument[1]);
+                        await misc.dumplog(argument[1]);
                     }
                     break;
                 default:
